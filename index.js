@@ -11,6 +11,7 @@ const {
   Notification,
 } = require("electron");
 const path = require("path");
+const adProtection = require("./src/ipc/adProtection");
 
 // Independent profile: testing this build never changes the installed app.
 app.setName("Streambert Plus");
@@ -118,6 +119,13 @@ const BLOCKED_HOSTS = [
   "*://tmstr4.neonhorizonworkshops.com/*",
 ];
 
+function legacyBlocked(url) {
+  return BLOCKED_HOSTS.some(pattern => {
+    const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+    return new RegExp(`^${escaped}$`).test(url);
+  });
+}
+
 // -- Module-level state --------------------------------------------------------
 let mainWindow = null;
 const getMainWindow = () => mainWindow;
@@ -138,6 +146,10 @@ function setupSession(playerSession, trailerSession) {
 
   const UA =
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+  for (const ses of [playerSession, trailerSession]) {
+    ses.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
+    ses.setPermissionCheckHandler(() => false);
+  }
   playerSession.setUserAgent(UA);
   trailerSession.setUserAgent(UA);
 
@@ -151,42 +163,20 @@ function setupSession(playerSession, trailerSession) {
   );
 
   // Trailer: block ads only (no media intercept needed)
-  trailerSession.webRequest.onBeforeRequest({ urls: BLOCKED_HOSTS }, (_, cb) =>
-    cb({ cancel: true }),
+  trailerSession.webRequest.onBeforeRequest({ urls: ["*://*/*"] }, (details, cb) =>
+    cb({ cancel: adProtection.blocksRequest(details) || legacyBlocked(details.url) }),
   );
 
-  // Player session: block ads + intercept m3u8/vtt URLs for renderer
-  const MEDIA_URLS = [
-    "*://*/*.m3u8*",
-    "*://*/*.m3u8",
-    "*://*/*.vtt*",
-    "*://*/*.vtt",
-  ];
+  // One listener owns both filtering and media detection; Electron replaces duplicate listeners.
   playerSession.webRequest.onBeforeRequest(
-    { urls: [...BLOCKED_HOSTS, ...MEDIA_URLS] },
+    { urls: ["*://*/*"] },
     (details, callback) => {
       const { url } = details;
-      const isMedia = url.includes(".m3u8") || url.includes(".vtt");
-      if (!isMedia) {
+      if (adProtection.blocksRequest(details) || legacyBlocked(url)) {
         blockStats.recordBlockedRequest(url);
         callback({ cancel: true });
         return;
       }
-      // Media URL: check if it also happens to be on a blocked domain
-      try {
-        const host = new URL(url).hostname;
-        const blocked = BLOCKED_HOSTS.some((pat) => {
-          const hostPat = pat.replace(/^\*:\/\//, "").split("/")[0];
-          return hostPat.startsWith("*.")
-            ? host.endsWith(hostPat.slice(1))
-            : host === hostPat || host === hostPat.replace(/^\*\./, "");
-        });
-        if (blocked) {
-          blockStats.recordBlockedRequest(url);
-          callback({ cancel: true });
-          return;
-        }
-      } catch {}
       // Pass through + notify renderer
       const mw = getMainWindow();
       if (mw && !mw.isDestroyed()) {
@@ -287,7 +277,7 @@ function createWindow() {
       }
     } catch {}
 
-    wc.setWindowOpenHandler(() => ({ action: "deny" }));
+    adProtection.protectContents(wc, blockStats.recordBlockedRequest);
     wc.on("enter-html-full-screen", () =>
       mainWindow.webContents.send("webview-enter-fullscreen"),
     );
@@ -444,11 +434,11 @@ ipcMain.handle("open-pip-window", (_, { url, title }) => {
   });
 
   // Block all popup windows from the streaming site and any nested frames
-  pipWindow.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  adProtection.protectContents(pipWindow.webContents, blockStats.recordBlockedRequest);
 
   // If the site uses <webview> elements (unlikely but safe), block there too
   pipWindow.webContents.on("did-attach-webview", (_, wc) => {
-    wc.setWindowOpenHandler(() => ({ action: "deny" }));
+    adProtection.protectContents(wc, blockStats.recordBlockedRequest);
   });
 
   pipWindow.loadURL(url);
@@ -519,6 +509,15 @@ if (!gotTheLock) {
 
   app.whenReady().then(() => {
     _bench("app ready");
+    // Install before any guest can issue its first request, including initial redirects.
+    adProtection.getEngine();
+    setupSession(session.fromPartition("persist:player"), session.fromPartition("persist:trailer"));
+    sessionsConfigured = true;
+    app.on("web-contents-created", (_event, contents) => {
+      if (contents.session === session.fromPartition("persist:player") || contents.session === session.fromPartition("persist:trailer")) {
+        adProtection.protectContents(contents, blockStats.recordBlockedRequest);
+      }
+    });
     createWindow();
   });
   app.on("window-all-closed", () => app.quit());
@@ -526,3 +525,4 @@ if (!gotTheLock) {
     if (mainWindow === null) createWindow();
   });
 }
+

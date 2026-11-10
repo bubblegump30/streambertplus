@@ -14,3 +14,12 @@ No real TMDB credentials or external movie/TV streams were used by the acceptanc
 
 ## Implementation and privacy
 MoviePage and TVPage were replaced wholesale. Shared code is under src/components/playback; native fixed-purpose commands are under src/ipc/playback.js. Bookmarks and server preferences are local. Archives and repository content exclude user/test profiles, downloaded media, real credentials, node_modules and generated release folders. Original GPL-3.0 notices remain.
+
+
+## 2.8.1 ad protection
+
+16 unit tests pass, including ad request matching, normal media/subtitle preservation and navigation guards.
+The isolated Electron ad fixture checks blocked ad scripts, CSS hiding in main/nested frames, preserved video controls, playlist/subtitle requests, popup denial and cross-origin takeover denial.
+Production dependency audit: 0 known vulnerabilities at build time. Development dependency audit is separate.
+The screenshot reported by the user is not itself proof that this exact live provider overlay is resolved. Live provider acceptance remains pending.
+

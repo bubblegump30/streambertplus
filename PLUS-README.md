@@ -1,5 +1,15 @@
 # Streambert Plus 2.8.0 - Clean Layout
 
+
+## 2.8.1 - Ad protection update
+
+- Bundled EasyList network filtering and standard cosmetic rules, available offline.
+- Filtering starts before the first embedded-player request.
+- Popup windows and unsolicited cross-origin top-level navigation are blocked in embedded and pop-out players.
+- Player frames receive cosmetic ad rules; media and subtitle detection stay on the same request handler.
+
+The filter snapshot updates with app releases. Provider changes, inline promotions and ads stitched into the actual video may still need source-specific fixes. Real verification challenges are not solved or bypassed. Live verification of the reported provider overlay remains pending.
+
 A separate Windows x64 build based on upstream Streambert 2.6.0, with the reliability improvements from Plus 2.6.1 and a redesigned interface. Original project: https://github.com/truelockmc/streambert . Original authors and GPL-3.0 license retained.
 
 ## Start
@@ -43,3 +53,4 @@ Favorites and per-title/per-episode observed-success preferences are available i
 Existing percentage/seconds progress is read where sufficient runtime data is available. The new records are backed up along with server preferences and themes. Clearing watch progress removes new bookmarks and legacy time records.
 
 The unit suite has 13 checks. The local layout and simulated-clock playback acceptance suites pass. Real external playback is not certified by these tests.
+
