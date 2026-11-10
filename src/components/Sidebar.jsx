@@ -1,277 +1,68 @@
-import { useState, useRef, useEffect } from "react";
+import { useRef, useState } from "react";
 import { imgUrl } from "../utils/api";
-import { useSeasonalEvent } from "../components/seasonalEvents.jsx";
-import {
-  StreambertLogo,
-  HomeIcon,
-  SearchIcon,
-  HistoryIcon,
-  FilmIcon,
-  SettingsIcon,
-  DownloadsQueueIcon,
-  QuitIcon,
-  BackIcon,
-  HelpIcon,
-} from "./Icons";
+import { PlayIcon, HomeIcon, SearchIcon, HistoryIcon, SettingsIcon, DownloadsQueueIcon, BackIcon, HelpIcon } from "./Icons";
 
-export default function Sidebar({
-  page,
-  onNavigate,
-  onSearch,
-  savedList,
-  activeDownloads,
-  onReorderSaved,
-  onRemoveSaved,
-  canGoBack,
-  onBack,
-  onShowShortcuts,
-}) {
-  const [dragOver, setDragOver] = useState(null);
-  const dragItem = useRef(null);
-  const dragNode = useRef(null);
-  const seasonalEvent = useSeasonalEvent();
-
-  const [tooltip, setTooltip] = useState(null); // { title, y }
-  const [contextMenu, setContextMenu] = useState(null); // { item, x, y }
-
-  useEffect(() => {
-    const close = () => setContextMenu(null);
-    window.addEventListener("click", close);
-    window.addEventListener("contextmenu", close);
-    return () => {
-      window.removeEventListener("click", close);
-      window.removeEventListener("contextmenu", close);
-    };
-  }, []);
-
-  const handleContextMenu = (e, item) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setTooltip(null);
-    setContextMenu({ item, x: e.clientX, y: e.clientY });
+export default function Sidebar({ page, onNavigate, onSearch, savedList = [], activeDownloads = 0,
+  onReorderSaved, onRemoveSaved, canGoBack, onBack, onShowShortcuts }) {
+  const dragging = useRef(null);
+  const [dropTarget, setDropTarget] = useState(null);
+  const moveSaved = (from, to) => {
+    if (from === null || from === to || to < 0 || to >= savedList.length) return;
+    const next = [...savedList];
+    next.splice(to, 0, next.splice(from, 1)[0]);
+    onReorderSaved?.(next.map((item) => `${item.media_type}_${item.id}`));
   };
-
-  const handleDragStart = (e, index) => {
-    dragItem.current = index;
-    dragNode.current = e.currentTarget;
-    setTimeout(() => {
-      if (dragNode.current) dragNode.current.style.opacity = "0.4";
-    }, 0);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragEnd = () => {
-    if (dragNode.current) dragNode.current.style.opacity = "1";
-    dragItem.current = null;
-    dragNode.current = null;
-    setDragOver(null);
-  };
-
-  const handleDragEnter = (e, index) => {
-    if (dragItem.current === index) return;
-    setDragOver(index);
-  };
-
-  const handleDrop = (e, dropIndex) => {
-    e.preventDefault();
-    const fromIndex = dragItem.current;
-    if (fromIndex === null || fromIndex === dropIndex) return;
-
-    const newList = [...savedList];
-    const [moved] = newList.splice(fromIndex, 1);
-    newList.splice(dropIndex, 0, moved);
-
-    const newOrder = newList.map((item) => `${item.media_type}_${item.id}`);
-    onReorderSaved(newOrder);
-    setDragOver(null);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  };
-
-  const handleMouseEnter = (e, title) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setTooltip({ title, y: rect.top + rect.height / 2 });
-  };
-
-  const handleMouseLeave = () => {
-    setTooltip(null);
-  };
-
+  const links = [
+    { id: "home", label: "Discover", icon: <HomeIcon /> },
+    { id: "history", label: "My library", icon: <HistoryIcon /> },
+    { id: "downloads", label: "Downloads", icon: <DownloadsQueueIcon />, count: activeDownloads },
+  ];
   return (
-    <div className="sidebar">
-      <div
-        className="sidebar-logo"
-        onClick={() => onNavigate("home")}
-        title="Streambert"
-        style={{ position: "relative" }}
-      >
-        <StreambertLogo />
-        {seasonalEvent && seasonalEvent.render()}
-      </div>
-
-      {canGoBack && (
-        <SideBtn onClick={onBack} icon={<BackIcon />} label="Back (Ctrl+Z)" />
-      )}
-
-      <SideBtn onClick={onSearch} icon={<SearchIcon />} label="Search  (⌘F)" />
-      <SideBtn
-        active={page === "home"}
-        onClick={() => onNavigate("home")}
-        icon={<HomeIcon />}
-        label="Home"
-      />
-      <SideBtn
-        active={page === "history"}
-        onClick={() => onNavigate("history")}
-        icon={<HistoryIcon />}
-        label="Library & History"
-      />
-      <SideBtn
-        active={page === "downloads"}
-        onClick={() => onNavigate("downloads")}
-        icon={<DownloadsQueueIcon />}
-        label="Downloads"
-        badge={activeDownloads > 0 ? activeDownloads : null}
-      />
-
-      <div className="sidebar-sep" />
-
-      <div className="sidebar-saved">
-        {savedList.map((item, index) => {
-          const key = `${item.media_type}_${item.id}`;
-          const title = item.title || item.name;
-          return (
-            <div
-              key={key}
-              className={`saved-thumb${dragOver === index ? " drag-over" : ""}`}
-              draggable
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragEnd={handleDragEnd}
-              onDragEnter={(e) => handleDragEnter(e, index)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, index)}
-              onClick={() =>
-                onNavigate(item.media_type === "tv" ? "tv" : "movie", item)
-              }
-              onContextMenu={(e) => handleContextMenu(e, item)}
-              onMouseEnter={(e) => handleMouseEnter(e, title)}
-              onMouseLeave={handleMouseLeave}
-              style={{ cursor: "grab", position: "relative" }}
-            >
-              {item.poster_path ? (
-                <img src={imgUrl(item.poster_path, "w200")} alt={title} />
-              ) : (
-                <div className="no-img">
-                  <FilmIcon />
+    <aside className="sidebar clean-sidebar" aria-label="Main navigation">
+      <button className="clean-brand" onClick={() => onNavigate("home")} aria-label="Streambert Plus home">
+        <span className="clean-brand-icon"><PlayIcon /></span>
+        <span className="clean-brand-copy">Streambert<span>PLUS</span></span>
+      </button>
+      <button className="clean-search" onClick={onSearch}><SearchIcon /><span>Search titles</span><kbd>Ctrl F</kbd></button>
+      <nav className="clean-nav" aria-label="Browse">
+        {links.map(({ id, label, icon, count }) => (
+          <button key={id} className={`clean-nav-link${page === id ? " is-current" : ""}`} aria-current={page === id ? "page" : undefined} onClick={() => onNavigate(id)}>
+            {icon}<span>{label}</span>{count > 0 && <span className="clean-nav-count">{count}</span>}
+          </button>
+        ))}
+        {canGoBack && <button className="clean-nav-link clean-back" onClick={onBack}><BackIcon /><span>Go back</span></button>}
+      </nav>
+      <section className="clean-saved" aria-label="Saved titles">
+        <div className="clean-sidebar-heading"><span>YOUR WATCHLIST</span><span>{savedList.length}</span></div>
+        <div className="clean-saved-list">
+          {savedList.length === 0 && <p className="clean-saved-empty">Save a movie or show.<br />Find it here when you're ready.</p>}
+          {savedList.map((item, index) => {
+            const title = item.title || item.name;
+            return (
+              <div key={`${item.media_type}_${item.id}`} className={`clean-saved-row${dropTarget === index ? " is-drop-target" : ""}`} draggable
+                onDragStart={(event) => { dragging.current = index; event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(index)); }}
+                onDragOver={(event) => { event.preventDefault(); setDropTarget(index); }}
+                onDrop={(event) => { event.preventDefault(); moveSaved(dragging.current, index); dragging.current = null; setDropTarget(null); }}
+                onDragEnd={() => { dragging.current = null; setDropTarget(null); }}>
+                <button className="clean-saved-open" onClick={() => onNavigate(item.media_type === "tv" ? "tv" : "movie", item)} title={title}>
+                  {item.poster_path ? <img src={imgUrl(item.poster_path, "w92")} alt="" loading="lazy" /> : <span className="clean-saved-placeholder"><PlayIcon /></span>}
+                  <span><strong>{title}</strong><small>{item.media_type === "tv" ? "TV show" : "Movie"}</small></span>
+                </button>
+                <div className="clean-saved-actions">
+                  <button aria-label={`Move ${title} up`} disabled={index === 0} onClick={() => moveSaved(index, index - 1)}>↑</button>
+                  <button aria-label={`Move ${title} down`} disabled={index === savedList.length - 1} onClick={() => moveSaved(index, index + 1)}>↓</button>
+                  <button aria-label={`Remove ${title} from watchlist`} onClick={() => onRemoveSaved?.(item)}>×</button>
                 </div>
-              )}
-              {dragOver === index && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 3,
-                    background: "var(--accent, #e50914)",
-                    borderRadius: 2,
-                    pointerEvents: "none",
-                  }}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {tooltip && (
-        <div className="saved-thumb-tooltip" style={{ top: tooltip.y }}>
-          {tooltip.title}
+              </div>
+            );
+          })}
         </div>
-      )}
-
-      {contextMenu && (
-        <div
-          className="sidebar-context-menu"
-          style={{
-            position: "fixed",
-            top: contextMenu.y,
-            left: contextMenu.x,
-            zIndex: 9999,
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div
-            className="sidebar-context-menu-item"
-            onClick={() => {
-              onRemoveSaved && onRemoveSaved(contextMenu.item);
-              setContextMenu(null);
-            }}
-          >
-            Remove
-          </div>
-        </div>
-      )}
-
-      <div className="sidebar-bottom">
-        <SideBtn
-          onClick={onShowShortcuts}
-          icon={<HelpIcon />}
-          label="Help & Shortcuts (?)"
-        />
-        <SideBtn
-          active={page === "settings"}
-          onClick={() => onNavigate("settings")}
-          icon={<SettingsIcon />}
-          label="Settings"
-        />
-        <button
-          className="sidebar-btn"
-          onClick={() => window.electron?.quitApp?.()}
-          title="Quit App"
-          style={{ color: "#e53e3e", marginTop: 4 }}
-        >
-          <QuitIcon />
-          <span className="tooltip">Quit App</span>
-        </button>
+      </section>
+      <div className="clean-sidebar-footer">
+        <p className="clean-refresh-credit">Refreshed by Kyle Austin Hillier</p>
+        <button className={`clean-nav-link${page === "settings" ? " is-current" : ""}`} aria-current={page === "settings" ? "page" : undefined} onClick={() => onNavigate("settings")}><SettingsIcon /><span>Settings & themes</span></button>
+        <button className="clean-nav-link" onClick={onShowShortcuts}><HelpIcon /><span>Help & shortcuts</span></button>
       </div>
-    </div>
-  );
-}
-
-function SideBtn({ active, onClick, icon, label, badge }) {
-  return (
-    <button
-      className={`sidebar-btn ${active ? "active" : ""}`}
-      onClick={onClick}
-      style={{ position: "relative" }}
-    >
-      {icon}
-      <span className="tooltip">{label}</span>
-      {badge && (
-        <span
-          style={{
-            position: "absolute",
-            top: 4,
-            right: 4,
-            minWidth: 16,
-            height: 16,
-            borderRadius: 8,
-            background: "var(--red)",
-            color: "white",
-            fontSize: 10,
-            fontWeight: 700,
-            lineHeight: "16px",
-            textAlign: "center",
-            padding: "0 4px",
-          }}
-        >
-          {badge}
-        </span>
-      )}
-    </button>
+    </aside>
   );
 }

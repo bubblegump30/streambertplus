@@ -1,7 +1,13 @@
 // ── IPC: Player launch, window controls, auto-updater ─────────────────────────
 
 const { ipcMain, shell, app } = require("electron");
-const { spawn, spawnSync } = require("child_process");
+const { spawn, spawnSync, execFile } = require("child_process");
+function runProbe(file, args, options) {
+  return new Promise((resolve) => {
+    execFile(file, args, { ...options, windowsHide: true, maxBuffer: 1024 * 1024 },
+      (error, stdout, stderr) => resolve({ status: error ? error.code : 0, stdout: stdout || "", stderr: stderr || "" }));
+  });
+}
 const path = require("path");
 const fs = require("fs");
 const https = require("https");
@@ -51,43 +57,6 @@ function findTrustedUpdateSource(parsedUrl) {
     ) || null
   );
 }
-
-// ── Stream metadata (Referer / UA) remembered per captured m3u8 URL ──────────
-// The session hook in index.js records these so "open in external player" can
-// send the same headers the embedded player used. Capped to avoid unbounded growth.
-const binCache = new Map(); // bare binary name -> resolved path | null
-const streamMeta = new Map(); // url -> { referer, origin, userAgent }
-const STREAM_META_MAX = 50;
-// Header values end up in player command lines / config: strip control chars
-// (no header or option injection via CR/LF) and cap the length.
-const cleanHeader = (v, max = 4096) =>
-  typeof v === "string" ? v.replace(/[\u0000-\u001f\u007f]/g, "").slice(0, max) : "";
-
-function hasStreamMeta(url) {
-  return streamMeta.has(url);
-}
-
-function rememberStreamMeta(url, meta = {}) {
-  if (typeof url !== "string" || !url) return;
-  if (!streamMeta.has(url) && streamMeta.size >= STREAM_META_MAX) {
-    streamMeta.delete(streamMeta.keys().next().value);
-  }
-  const web = (v) => (/^https?:\/\//i.test(v) ? v : "");
-  streamMeta.set(url, {
-    referer: web(cleanHeader(meta.referer, 2048)),
-    origin: web(cleanHeader(meta.origin, 512)),
-    userAgent: cleanHeader(meta.userAgent, 512),
-  });
-}
-
-const isHttpUrl = (u) => {
-  try {
-    const p = new URL(u);
-    return p.protocol === "http:" || p.protocol === "https:";
-  } catch {
-    return false;
-  }
-};
 
 function register(getMainWindow, { writeSecretMigration }) {
   // ── Open file at specific timestamp in mpv / VLC ─────────────────────────
@@ -222,180 +191,6 @@ function register(getMainWindow, { writeSecretMigration }) {
     },
   );
 
-  // ── Open a live stream URL (m3u8) in an external player (mpv / VLC) ────────
-  ipcMain.handle("open-stream-external", async (_, { url, title, subtitles } = {}) => {
-    if (!isHttpUrl(url)) return { ok: false, error: "Invalid stream URL" };
-
-    const platform = process.platform;
-    const meta = streamMeta.get(url) || {};
-    const safeTitle =
-      typeof title === "string" ? title.replace(/[\r\n]/g, " ").slice(0, 200) : "";
-    const subUrls = (Array.isArray(subtitles) ? subtitles : [])
-      .map((s) => (typeof s === "string" ? s : s?.url))
-      .filter(isHttpUrl);
-
-    const resolveBin = (bin) => {
-      if (path.isAbsolute(bin)) return fs.existsSync(bin) ? bin : null;
-      if (binCache.has(bin)) return binCache.get(bin);
-      try {
-        const r = spawnSync(platform === "win32" ? "where" : "which", [bin], {
-          encoding: "utf8",
-        });
-        if (r.status === 0 && r.stdout.trim()) {
-          const found = r.stdout.trim().split(/\r?\n/)[0].trim();
-          binCache.set(bin, found);
-          return found;
-        }
-      } catch {}
-      return null;
-    };
-    // Launch and wait for a short time.
-    // The player's output goes to a log FILE (not a pipe) so it is fully
-    // independent of this app: quitting Streambert will not close the player
-    const tryLaunch = (bin, args) => {
-      const resolved = resolveBin(bin);
-      if (!resolved) return Promise.resolve(null);
-      return new Promise((resolve) => {
-        const logPath = path.join(
-          os.tmpdir(),
-          `streambert_player_${process.pid}_${Date.now()}.log`,
-        );
-        let fd = null;
-        let done = false;
-        const finish = (v) => {
-          if (done) return;
-          done = true;
-          resolve(v);
-        };
-        const closeFd = () => {
-          if (fd !== null) {
-            try {
-              fs.closeSync(fd);
-            } catch {}
-            fd = null;
-          }
-        };
-        const removeLog = () => {
-          try {
-            fs.unlinkSync(logPath);
-          } catch {}
-        };
-        try {
-          fd = fs.openSync(logPath, "a", 0o600);
-          const child = spawn(resolved, args, {
-            detached: true,
-            stdio: ["ignore", fd, fd],
-            windowsHide: false,
-          });
-          child.on("error", () => {
-            closeFd();
-            removeLog();
-            finish(null);
-          });
-          child.on("exit", (code, signal) => {
-            closeFd();
-            let text = "";
-            try {
-              text = fs.readFileSync(logPath, "utf8").slice(-4000);
-            } catch {}
-            removeLog();
-            const lines = text
-              .split(/\r?\n/)
-              .map((l) => l.trim())
-              .filter(Boolean);
-            const key = [...lines]
-              .reverse()
-              .find((l) =>
-                /error|failed|forbidden|denied|unable|invalid|unknown option/i.test(l),
-              );
-            const tail = lines.slice(-3).join(" | ");
-            const detail = key && !tail.includes(key) ? `${key} | ${tail}` : tail;
-            // After the startup window this only cleans up; finish() is a no-op
-            finish({
-              failed: true,
-              error: `${detail || "No output"} (exit ${code ?? signal})`.slice(0, 400),
-            });
-          });
-          setTimeout(() => {
-            if (done) return;
-            closeFd(); // the child keeps its own copy of the descriptor
-            child.unref();
-            finish({ failed: false });
-          }, 2500);
-        } catch {
-          closeFd();
-          removeLog();
-          finish(null);
-        }
-      });
-    };
-
-    const mpvPaths =
-      platform === "win32"
-        ? ["mpv", "C:\\Program Files\\mpv\\mpv.exe"]
-        : platform === "darwin"
-          ? ["/opt/homebrew/bin/mpv", "/usr/local/bin/mpv", "mpv"]
-          : ["/usr/bin/mpv", "/usr/local/bin/mpv", "/snap/bin/mpv", "mpv"];
-    const vlcPaths =
-      platform === "win32"
-        ? [
-            "C:\\Program Files\\VideoLAN\\VLC\\vlc.exe",
-            "C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe",
-            "vlc",
-          ]
-        : platform === "darwin"
-          ? ["/Applications/VLC.app/Contents/MacOS/VLC", "vlc"]
-          : ["/usr/bin/vlc", "/usr/local/bin/vlc", "/snap/bin/vlc", "vlc"];
-
-    const mpvArgs = ["--ytdl=no", "--msg-level=all=warn"];
-    if (meta.referer) mpvArgs.push(`--referrer=${meta.referer}`);
-    if (meta.userAgent) mpvArgs.push(`--user-agent=${meta.userAgent}`);
-    if (meta.origin) mpvArgs.push(`--http-header-fields=Origin: ${meta.origin}`);
-    if (safeTitle) mpvArgs.push(`--force-media-title=${safeTitle}`);
-    subUrls.forEach((u) => mpvArgs.push(`--sub-file=${u}`));
-    mpvArgs.push("--", url);
-
-    // VLC cannot load remote subtitle files via CLI, so subtitles are skipped.
-    const vlcArgs = [];
-    if (meta.referer) vlcArgs.push(`--http-referrer=${meta.referer}`);
-    if (meta.userAgent) vlcArgs.push(`--http-user-agent=${meta.userAgent}`);
-    if (safeTitle) vlcArgs.push(`--meta-title=${safeTitle}`);
-    vlcArgs.push(url);
-
-    let lastError = null;
-    for (const bin of mpvPaths) {
-      const r = await tryLaunch(bin, mpvArgs);
-      if (!r) continue;
-      if (!r.failed) return { ok: true, player: "mpv" };
-      lastError = r.error;
-      break; // mpv exists but failed; the same stream would fail in VLC too
-    }
-    if (!lastError) {
-      for (const bin of vlcPaths) {
-        const r = await tryLaunch(bin, vlcArgs);
-        if (!r) continue;
-        if (!r.failed) return { ok: true, player: "vlc" };
-        lastError = r.error;
-        break;
-      }
-    }
-    if (lastError) {
-      const sent = [
-        meta.referer && "Referer",
-        meta.origin && "Origin",
-        meta.userAgent && "User-Agent",
-      ].filter(Boolean);
-      return {
-        ok: false,
-        error: `${lastError} [sent: ${sent.join(", ") || "no captured headers"}]`,
-      };
-    }
-    return {
-      ok: false,
-      error: "No external player found. Install mpv or VLC and try again.",
-    };
-  });
-
   // ── Window controls (custom Windows titlebar) ─────────────────────────────
   ipcMain.handle("window-minimize", () => {
     const mw = getMainWindow();
@@ -454,7 +249,7 @@ function register(getMainWindow, { writeSecretMigration }) {
 
     for (const probe of probePaths) {
       try {
-        const result = spawnSync(
+        const result = await runProbe(
           probe,
           [
             "-v",
@@ -484,7 +279,7 @@ function register(getMainWindow, { writeSecretMigration }) {
 
     for (const ff of ffmpegPaths) {
       try {
-        const r = spawnSync(ff, ["-i", filePath], {
+        const r = await runProbe(ff, ["-i", filePath], {
           encoding: "utf8",
           timeout: 8000,
         });
@@ -514,264 +309,10 @@ function register(getMainWindow, { writeSecretMigration }) {
     return null;
   });
 
-  ipcMain.handle("download-and-install-update", async (_, { url, format }) => {
-    try {
-      const ALLOWED_FORMATS = [
-        "exe",
-        "deb",
-        "pacman",
-        "dmg",
-        "dmg_arm64",
-        "appimage",
-      ];
-      if (!ALLOWED_FORMATS.includes(format)) {
-        return { ok: false, error: "Invalid format" };
-      }
-
-      let parsed;
-      try {
-        parsed = new URL(url);
-      } catch {
-        return { ok: false, error: "Invalid URL" };
-      }
-
-      // Same check for every trusted source (GitHub, Codeberg, ...)
-      // see TRUSTED_UPDATE_SOURCES above.
-      const trustedSource = findTrustedUpdateSource(parsed);
-      if (!trustedSource) {
-        return { ok: false, error: "Unauthorized update source" };
-      }
-      const ALLOWED_REDIRECT_HOSTS = trustedSource.redirectHosts;
-
-      _updateAbortController = new AbortController();
-      const { signal } = _updateAbortController;
-
-      const ext =
-        format === "exe"
-          ? ".exe"
-          : format === "deb"
-            ? ".deb"
-            : format === "pacman"
-              ? ".pacman"
-              : format === "dmg"
-                ? ".dmg"
-                : ".AppImage";
-      const destPath = path.join(os.tmpdir(), `streambert-update${ext}`);
-
-      await new Promise((resolve, reject) => {
-        if (signal.aborted) return reject(new Error("Cancelled"));
-
-        const doRequest = (reqUrl, redirectDepth = 0) => {
-          // Guard against infinite redirect loops.
-          if (redirectDepth > 5) {
-            return reject(new Error("Too many redirects"));
-          }
-          let reqParsed;
-          try {
-            reqParsed = new URL(reqUrl);
-          } catch {
-            return reject(new Error("Invalid redirect URL"));
-          }
-          if (!ALLOWED_REDIRECT_HOSTS.includes(reqParsed.hostname)) {
-            return reject(
-              new Error(`Untrusted redirect host: ${reqParsed.hostname}`),
-            );
-          }
-
-          const lib = reqUrl.startsWith("https") ? https : http;
-          const req = lib.get(
-            reqUrl,
-            {
-              headers: {
-                "User-Agent": "Streambert-AutoUpdater",
-                Accept: "application/octet-stream",
-              },
-            },
-            (res) => {
-              if (
-                res.statusCode >= 300 &&
-                res.statusCode < 400 &&
-                res.headers.location
-              ) {
-                res.resume();
-                const next = res.headers.location.startsWith("http")
-                  ? res.headers.location
-                  : new URL(res.headers.location, reqUrl).toString();
-                doRequest(next, redirectDepth + 1);
-                return;
-              }
-              if (res.statusCode !== 200) {
-                res.resume();
-                return reject(new Error(`HTTP ${res.statusCode}`));
-              }
-
-              const total = parseInt(res.headers["content-length"] || "0", 10);
-              let downloaded = 0;
-              const file = fs.createWriteStream(destPath);
-
-              res.on("data", (chunk) => {
-                if (signal.aborted) {
-                  req.destroy();
-                  file.destroy();
-                  reject(new Error("Cancelled"));
-                  return;
-                }
-                downloaded += chunk.length;
-                file.write(chunk);
-                const percent =
-                  total > 0 ? Math.round((downloaded / total) * 100) : 0;
-                const mb = (downloaded / 1e6).toFixed(1);
-                const totalMb =
-                  total > 0 ? `/ ${(total / 1e6).toFixed(1)} MB` : "";
-                const mw = getMainWindow();
-                if (mw && !mw.isDestroyed()) {
-                  mw.webContents.send("update-progress", {
-                    percent,
-                    label: `Downloading… ${mb} MB ${totalMb}`,
-                  });
-                }
-              });
-              res.on("end", () => {
-                file.end();
-                file.on("finish", resolve);
-                file.on("error", reject);
-              });
-              res.on("error", reject);
-              req.on("error", reject);
-            },
-          );
-          req.on("error", reject);
-        };
-
-        doRequest(url);
-      });
-
-      if (signal.aborted) return { ok: false, error: "Cancelled" };
-
-      // ── Helper: send "Installing…" to renderer ──────────────────────────────
-      const sendInstalling = () => {
-        const mw = getMainWindow();
-        if (mw && !mw.isDestroyed()) {
-          mw.webContents.send("update-progress", {
-            percent: 100,
-            label: "Installing…",
-          });
-        }
-      };
-
-      if (format === "appimage") {
-        sendInstalling();
-        fs.chmodSync(destPath, 0o755);
-        const currentAppImage = process.env.APPIMAGE;
-        if (currentAppImage) {
-          const scriptPath = path.join(os.tmpdir(), "streambert-update.sh");
-          const pid = process.pid;
-          const target = currentAppImage;
-          const scriptContent =
-            [
-              "#!/bin/sh",
-              `while kill -0 ${pid} 2>/dev/null; do sleep 0.2; done`,
-              `mv -f "${destPath}" "${target}"`,
-              `chmod +x "${target}"`,
-              `"${target}" &`,
-            ].join("\n") + "\n";
-          fs.writeFileSync(scriptPath, scriptContent, { mode: 0o755 });
-          spawn("sh", [scriptPath], {
-            detached: true,
-            stdio: "ignore",
-          }).unref();
-        } else {
-          spawn(destPath, [], { detached: true, stdio: "ignore" }).unref();
-        }
-        writeSecretMigration();
-        app.exit(0);
-      } else if (format === "pacman") {
-        sendInstalling();
-        // Give the renderer a moment to process the IPC message and show
-        // "Installing…" before spawnSync blocks the main thread
-        await new Promise((r) => setTimeout(r, 150));
-        fs.chmodSync(destPath, 0o644);
-        const pacmanLaunchers = [
-          { bin: "pkexec", args: ["pacman", "-U", "--noconfirm", destPath] },
-          { bin: "pamac-installer", args: [destPath] },
-        ];
-        let launched = false;
-        for (const { bin, args } of pacmanLaunchers) {
-          try {
-            const which = spawnSync("which", [bin], { encoding: "utf8" });
-            if (which.status !== 0) continue;
-            // spawnSync, to wait for pacman to finish before relaunching
-            const result = spawnSync(bin, args, { stdio: "inherit" });
-            if (result.status === 0) {
-              launched = true;
-              break;
-            }
-          } catch {
-            continue;
-          }
-        }
-        if (launched) {
-          writeSecretMigration();
-          app.relaunch();
-          app.exit(0);
-        } else {
-          shell.openPath(destPath);
-        }
-      } else if (format === "deb") {
-        sendInstalling();
-        await new Promise((r) => setTimeout(r, 150));
-        fs.chmodSync(destPath, 0o644);
-        const debLaunchers = [
-          { bin: "pkexec", args: ["dpkg", "-i", destPath] },
-          { bin: "pkexec", args: ["apt", "install", "-y", destPath] },
-          { bin: "gdebi-gtk", args: [destPath] },
-          { bin: "pkexec", args: ["gdebi", "-n", destPath] },
-        ];
-        let launched = false;
-        for (const { bin, args } of debLaunchers) {
-          try {
-            const which = spawnSync(
-              process.platform === "win32" ? "where" : "which",
-              [bin],
-              { encoding: "utf8" },
-            );
-            if (which.status !== 0) continue;
-            // spawnSync, to wait for dpkg to finish before relaunching
-            const result = spawnSync(bin, args, { stdio: "inherit" });
-            if (result.status === 0) {
-              launched = true;
-              break;
-            }
-          } catch {
-            continue;
-          }
-        }
-        if (launched) {
-          writeSecretMigration();
-          app.relaunch();
-          app.exit(0);
-        } else {
-          shell.openPath(destPath);
-        }
-      } else if (format === "exe") {
-        sendInstalling();
-        spawn(destPath, [], { detached: true, stdio: "ignore" }).unref();
-        app.exit(0);
-      } else if (format === "dmg") {
-        sendInstalling();
-        spawn("hdiutil", ["attach", destPath], {
-          detached: true,
-          stdio: "ignore",
-        }).unref();
-      }
-
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: e.message };
-    } finally {
-      _updateAbortController = null;
-    }
-  });
+  ipcMain.handle("download-and-install-update", async () => ({
+    ok: false,
+    error: "Upstream installers are disabled in Streambert Plus to preserve your custom build.",
+  }));
 
   ipcMain.handle("cancel-update", () => {
     _updateAbortController?.abort();
@@ -873,20 +414,6 @@ function register(getMainWindow, { writeSecretMigration }) {
 
       const JS = `
         (() => {
-          // DeVideoSrc exposes window.meinecloudPlayer (sync getters). Prefer it,
-          // fall back to the plain <video> lookup if it is missing / async.
-          const P = window.meinecloudPlayer;
-          if (P && typeof P.getCurrentTime === 'function') {
-            try {
-              const t = P.getCurrentTime();
-              const d = P.getDuration();
-              const paused = P.getPaused();
-              if (typeof t === 'number' && typeof d === 'number' && typeof paused === 'boolean') {
-                if (!(d > 0) || d === Infinity || paused) return null;
-                return { currentTime: t, duration: d, recentUserSeek: false, lastUserSeekTo: null };
-              }
-            } catch (e) {}
-          }
           const v = document.querySelector('video');
           if (!v || !v.duration || v.duration === Infinity || v.paused) return null;
           if (!v._seekTracked) {
@@ -975,9 +502,4 @@ function registerAudioDeviceRecovery() {
   ipc.on("audio-device-changed", () => setTimeout(recoverAllWebContents, 150));
 }
 
-module.exports = {
-  register,
-  registerAudioDeviceRecovery,
-  rememberStreamMeta,
-  hasStreamMeta,
-};
+module.exports = { register, registerAudioDeviceRecovery };

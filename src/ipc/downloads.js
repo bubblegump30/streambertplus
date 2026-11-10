@@ -9,6 +9,7 @@ const fs = require("fs");
 const https = require("https");
 const http = require("http");
 const os = require("os");
+const { readDownloadStore, writeDownloadStore } = require("./downloadStore");
 
 // ── Download store ────────────────────────────────────────────────────────────
 
@@ -36,8 +37,7 @@ function sendProgress(update) {
 
 function loadDownloads() {
   try {
-    const raw = fs.readFileSync(downloadsFile(), "utf8");
-    const parsed = JSON.parse(raw);
+    const parsed = readDownloadStore(downloadsFile());
     // Deduplicate: keep only the newest entry per (tmdbId, mediaType, season, episode)
     const seen = new Map();
     const sorted = [...parsed].sort(
@@ -60,33 +60,10 @@ function loadDownloads() {
 
 function saveDownloads() {
   try {
-    const toSave = downloads.filter(
-      (d) => d.status !== "downloading" && d.status !== "error",
-    );
-    fs.writeFileSync(downloadsFile(), JSON.stringify(toSave, null, 2));
-  } catch {}
-}
-
-function cleanupTempFiles(downloadPath) {
-  if (!downloadPath) return;
-  const TEMP_PATTERNS = [
-    /\.part$/,
-    /\.part\.\d+$/,
-    /\.part\.tmp$/,
-    /\.tmp$/,
-    /\.ytdl$/,
-    /\.part-Frag\d+$/,
-  ];
-  try {
-    const entries = fs.readdirSync(downloadPath);
-    for (const entry of entries) {
-      if (TEMP_PATTERNS.some((p) => p.test(entry))) {
-        try {
-          fs.unlinkSync(path.join(downloadPath, entry));
-        } catch {}
-      }
-    }
-  } catch {}
+    writeDownloadStore(downloadsFile(), downloads);
+  } catch (error) {
+    console.error("[downloads] Could not save download history:", error.message);
+  }
 }
 
 function killAllDownloads() {
@@ -96,13 +73,11 @@ function killAllDownloads() {
     } catch {}
     const idx = downloads.findIndex((d) => d.id === id);
     if (idx !== -1) {
-      downloads[idx].status = "error";
-      downloads[idx].lastMessage = "Cancelled on exit";
+      downloads[idx].status = "interrupted";
+      downloads[idx].lastMessage = "Interrupted when the app closed. Partial files were preserved. Reopen the title to retry.";
     }
     activeProcs.delete(id);
   }
-  const folders = new Set(downloads.map((d) => d.downloadPath).filter(Boolean));
-  for (const folder of folders) cleanupTempFiles(folder);
   saveDownloads();
 }
 
@@ -290,6 +265,8 @@ function register(getMainWindow) {
           String(d.season ?? "") === String(entry.season ?? "") &&
           String(d.episode ?? "") === String(entry.episode ?? "");
         downloads = downloads.filter((d) => !isSameMedia(d));
+
+        saveDownloads();
 
         const args = [
           "--cli",
@@ -522,6 +499,7 @@ function register(getMainWindow) {
           downloads[idx].completedAt = Date.now();
           downloads[idx].lastMessage = msg;
           appendLog(msg);
+          saveDownloads();
           sendProgress({ id, status: "error", lastMessage: msg });
         });
 
@@ -738,8 +716,7 @@ function register(getMainWindow) {
           if (sp?.path && fs.existsSync(sp.path)) fs.unlinkSync(sp.path);
         } catch {}
       }
-      const dlPath = dlEntry?.downloadPath;
-      if (dlPath) cleanupTempFiles(dlPath);
+      // Never sweep a shared download directory for temporary files.
       downloads = downloads.filter((d) => d.id !== id);
       saveDownloads();
       return { ok: true };

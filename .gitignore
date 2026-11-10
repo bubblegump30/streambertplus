@@ -4,3 +4,12 @@ download_config.ini
 dist/
 *.zip
 *secret.txt
+
+# Generated builds and local-only data
+release*/
+*.asar
+*.log
+.env
+.env.*
+*-evidence/
+*profile*/

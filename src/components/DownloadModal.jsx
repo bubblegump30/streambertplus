@@ -391,7 +391,6 @@ export default function DownloadModal({
   const [downloader, setDownloader] = useState(null);
   const [checking, setChecking] = useState(false);
   const [downloadStatus, setDownloadStatus] = useState(null);
-  const [externalStatus, setExternalStatus] = useState(null); // null | {ok, text}
 
   const [subEnabled, setSubEnabled] = useState(
     () =>
@@ -430,7 +429,7 @@ export default function DownloadModal({
   const binaryHint = ua.includes("win")
     ? "Windows_x64-portable"
     : ua.includes("mac")
-      ? "macOS_arm64-portable (Apple Silicon) or macOS_x86_64-portable (Intel)"
+      ? "For MacOS you will have to compile it yourself"
       : "Linux_x64-portable";
   const releaseUrl =
     "https://github.com/truelockmc/vid-dl-cli-only/releases/latest";
@@ -508,35 +507,6 @@ export default function DownloadModal({
       setDownloadPath(folder);
       storage.set("downloadPath", folder);
       setSettingPath(false);
-    }
-  };
-
-  const handleOpenExternal = async () => {
-    if (!m3u8Url || !isElectron) return;
-    setExternalStatus({ ok: true, text: "Opening …" });
-    try {
-      // Pass found subtitles (intercepted + selected from search) to the player
-      const subs = [...subtitles];
-      if (subEnabled) {
-        for (const sub of selectedSubs) {
-          if (sub.direct_url) subs.push({ url: sub.direct_url });
-        }
-      }
-      const res = await window.electron.openStreamExternal({
-        url: m3u8Url,
-        title: mediaName,
-        subtitles: subs,
-      });
-      setExternalStatus(
-        res?.ok
-          ? {
-              ok: true,
-              text: `✓ Opened in ${res.player === "vlc" ? "VLC" : "mpv"}`,
-            }
-          : { ok: false, text: res?.error || "Could not open external player" },
-      );
-    } catch (e) {
-      setExternalStatus({ ok: false, text: e.message });
     }
   };
 
@@ -745,40 +715,6 @@ export default function DownloadModal({
                 <div className="download-url-label">Stream URL found</div>
                 <code className="download-url-code">{m3u8Url}</code>
               </div>
-
-              {/* ── Open in external player ───────────────────────────────── */}
-              {isElectron && (
-                <div
-                  style={{
-                    padding: "12px 20px",
-                    borderBottom: "1px solid var(--border)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <button
-                    className="btn btn-secondary"
-                    onClick={handleOpenExternal}
-                    title="Play this stream in mpv or VLC"
-                  >
-                    ▶ Open in external player
-                  </button>
-                  {externalStatus && (
-                    <span
-                      style={{
-                        fontSize: 12,
-                        color: externalStatus.ok
-                          ? "var(--text3)"
-                          : "var(--red)",
-                      }}
-                    >
-                      {externalStatus.text}
-                    </span>
-                  )}
-                </div>
-              )}
 
               {/* ── Subtitle section ──────────────────────────────────────── */}
               <div

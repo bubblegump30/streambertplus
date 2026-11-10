@@ -19,7 +19,10 @@ export const BACKUP_KEYS = [
   "startPage",
   // Player preferences
   "playerSource",
-  "hianimeDubMode",
+  "playbackFavorites",
+  "playbackBookmarks",
+  "playbackSuccessfulSources",
+  "allmangaDubMode",
   "introSkipMode",
   // Other Stuff
   "ageLimit",
@@ -41,6 +44,9 @@ export const BACKUP_KEYS = [
   "searchHistory",
   // Appearance & behaviour
   "accentColor",
+  "accentInPlayer",
+  "theme",
+  "customThemeVars",
   "fontSize",
   "compactMode",
   "reduceAnimations",

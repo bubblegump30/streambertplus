@@ -46,10 +46,10 @@ export const ACCENT_PRESETS = [
   {
     id: "pink",
     label: "Pink",
-    color: "#db2777",
-    color2: "#ec4899",
-    dim: "rgba(219,39,119,0.15)",
-    glow: "0 0 30px rgba(219,39,119,0.3)",
+    color: "#f653b9",
+    color2: "#ff79ca",
+    dim: "rgba(246,83,185,0.16)",
+    glow: "0 0 30px rgba(246,83,185,0.3)",
   },
 ];
 
@@ -75,9 +75,9 @@ export const THEME_PRESETS = [
     label: "Dark",
     description: "Default dark theme",
     vars: {
-      "--bg": "#0a0a0a",
-      "--surface": "#111111",
-      "--surface2": "#1a1a1a",
+      "--bg": "#1e2023",
+      "--surface": "#25282e",
+      "--surface2": "#2d3139",
       "--surface3": "#222222",
       "--border": "#2a2a2a",
       "--text": "#f0f0f0",

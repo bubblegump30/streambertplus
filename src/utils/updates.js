@@ -58,6 +58,11 @@ async function getCurrentVersion() {
  * endpoint and headers differ (see UPDATE_SOURCES above).
  */
 export async function checkForUpdates(source = DEFAULT_UPDATE_SOURCE) {
+  // Upstream installers would replace this customized build.
+  throw new Error("Streambert Plus uses manual updates. Upstream installers are disabled to preserve this custom build.");
+}
+
+export async function checkUpstreamReleases(source = DEFAULT_UPDATE_SOURCE) {
   const cfg = UPDATE_SOURCES[source];
   if (!cfg) throw new Error(`Unknown update source: ${source}`);
 
