@@ -11,7 +11,7 @@ async function boundedRead(frame, code) {
 
 const SNAPSHOT = `(() => {
   const videos = Array.from(document.querySelectorAll('video'));
-  const v = videos.find(v => !v.paused && Number.isFinite(v.duration) && v.duration > 0) || videos.find(v => Number.isFinite(v.duration) && v.duration > 0);
+  const v = videos.find(v => !v.paused && Number.isFinite(v.duration) && v.duration > 0) || videos.find(v => Number.isFinite(v.duration) && v.duration > 0) || videos.find(v => v.error);
   if (!v) return null;
   return { currentTime: v.currentTime, duration: v.duration, paused: v.paused, ended: v.ended,
     readyState: v.readyState, errorCode: v.error?.code || null };
@@ -32,11 +32,12 @@ function register(getMainWindow) {
     const results = await Promise.all(frames(wc).map(async (frame) => {
       try {
         const result = await boundedRead(frame, SNAPSHOT);
+        if (result && Number.isInteger(result.errorCode) && result.errorCode >= 1 && result.errorCode <= 4) return { errorCode: result.errorCode, frameRoutingId: frame.routingId };
         if (!result || !Number.isFinite(result.duration) || result.duration < Math.min(600, expectedDuration * 0.2)) return null;
         return { ...result, frameRoutingId: frame.routingId };
       } catch { return null; }
     }));
-    return results.find((result) => result && !result.paused) || results.find(Boolean) || null;
+    return results.find((result) => result && !result.errorCode && !result.paused) || results.find((result) => result && !result.errorCode) || results.find(Boolean) || null;
   });
   ipcMain.handle("playback-seek", async (event, { id, seconds, frameRoutingId } = {}) => {
     const wc = playerContents(event, id);
@@ -89,3 +90,4 @@ function register(getMainWindow) {
   });
 }
 module.exports = { register };
+

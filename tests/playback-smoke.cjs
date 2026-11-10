@@ -78,7 +78,8 @@ app.on('browser-window-created', (_event, win) => {
       assert.equal(await run('JSON.parse(localStorage.getItem("streambert_playbackFavorites"))[0]'),'vidlink');
       await snap('Favorite-Servers.png');
       await run('Array.from(document.querySelectorAll(".playback-server-select")).find(b=>b.textContent.includes("VidLink")).click()');
-      await wait('document.querySelector("button[title^=Change]").textContent.includes("VidLink")');await delay(800);
+      await wait('document.querySelector("button[title^=Change]").textContent.includes("VidLink")');
+      await wait('document.querySelector(".playback-status")?.textContent.includes("Page loaded")');await delay(200);
       let wc=await fakeVideo();await delay(1400);
       assert.equal(await run('localStorage.getItem("streambert_playbackSuccessfulSources")'),null,'Paused static media must not become a successful source');
       await wc.executeJavaScript('window.fixturePaused=false');
@@ -112,10 +113,11 @@ app.on('browser-window-created', (_event, win) => {
       await run(`(() => { const e=new Event('did-fail-load');Object.assign(e,{isMainFrame:true,errorCode:-105,errorDescription:'Simulated DNS failure'});document.querySelector('webview').dispatchEvent(e);})()`);
       await wait('document.querySelector(".playback-status")?.textContent.includes("attention")');
       await snap('Playback-Recovery.png');
-      fs.writeFileSync(path.join(artifacts,'result.json'),JSON.stringify({mode:'Local fixtures and simulated video clock; not live playback',passed:['Loaded pages and paused media do not mark a server successful','Favorite server persistence','Advancing media clock records a successful source','Pause saves exact seconds','Resume choice does not create a provider guest before a decision','Observed seek restores saved position','Unseekable source preserves old bookmark until explicit consent to continue here','Top-level page failures expose recovery controls']},null,2));
+      fs.writeFileSync(path.join(artifacts,'result.json'),JSON.stringify({mode:'Local fixtures and simulated video clock; not live playback',passed:['Retrying the already-current server reattaches guest listeners','Loaded pages and paused media do not mark a server successful','Favorite server persistence','Advancing media clock records a successful source','Pause saves exact seconds','Resume choice does not create a provider guest before a decision','Observed seek restores saved position','Unseekable source preserves old bookmark until explicit consent to continue here','Top-level page failures expose recovery controls']},null,2));
       console.log('PLAYBACK ACCEPTANCE PASS');app.exit(0);
     }catch(error){console.error(error);console.error(await run('document.body.innerText'));await snap('Failure.png');app.exit(1);}
   });
 });
 require(process.env.STREAMBERT_TEST_ASAR || '../index.js');
 setTimeout(()=>{console.error('Playback acceptance timed out');app.exit(1);},55000).unref();
+

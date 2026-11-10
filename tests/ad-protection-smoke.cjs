@@ -19,6 +19,7 @@ app.whenReady().then(async()=>{
     ses.protocol.handle('https',request=>{
       visited.push(request.url);
       const url=new URL(request.url);
+      if(url.host==='multiembed.mov') return new Response(null,{status:302,headers:{Location:'https://streamingnow.mov/?play=fixture'}});
       const frame=url.pathname==='/frame';
       const html=`<!doctype html><html><body><video controls></video><ins class="adsbygoogle" data-ad-client="fixture">Advertisement fixture</ins>${frame?'':'<iframe src="https://fixture.example.org/frame"></iframe>'}<script src="https://ads.exoclick.com/tag.js"></script><script>window.scriptRan=true;fetch('/movie.m3u8').then(r=>r.text()).then(t=>window.mediaOK=t.includes('EXTM3U'));fetch('/en.vtt').then(r=>r.text()).then(t=>window.subsOK=t.includes('WEBVTT'));</script></body></html>`;
       if(url.pathname.endsWith('.m3u8'))return new Response('#EXTM3U\n#EXT-X-ENDLIST',{headers:{'Content-Type':'application/vnd.apple.mpegurl'}});
@@ -41,7 +42,11 @@ app.whenReady().then(async()=>{
     assert.equal(win.webContents.getURL(),'https://fixture.example.org/watch');
     assert.ok(blocked.some(url=>url.includes('exoclick.com')));
     assert.ok(!visited.some(url=>url.includes('exoclick.com')));
-    fs.writeFileSync(path.join(artifacts,'result.json'),JSON.stringify({mode:'Isolated Electron HTTPS fixtures, no live external stream',passed:['Ad script cancelled before response','Main and nested frame ad markup hidden','Video element preserved','Media playlist and subtitle requests preserved','Popup denied','Cross-origin takeover denied']},null,2));
+    await win.loadURL('https://multiembed.mov/?video_id=550&tmdb=1');
+    assert.ok(win.webContents.getURL().startsWith('https://streamingnow.mov/'));
+    await run('location.href="https://advert.example.org/takeover"');await delay(200);
+    assert.ok(win.webContents.getURL().startsWith('https://streamingnow.mov/'));
+    fs.writeFileSync(path.join(artifacts,'result.json'),JSON.stringify({mode:'Isolated Electron HTTPS fixtures, no live external stream',passed:['Ad script cancelled before response','Main and nested frame ad markup hidden','Video element preserved','Media playlist and subtitle requests preserved','Popup denied','Cross-origin takeover denied','MultiEmbed HTTP redirect accepted without opening arbitrary origins']},null,2));
     console.log('AD PROTECTION ACCEPTANCE PASS');app.exit(0);
   }catch(error){console.error(error);app.exit(1);}
 });

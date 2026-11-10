@@ -1,6 +1,17 @@
 # Streambert Plus
 
 
+## 2.8.2 - Provider compatibility update
+
+- Retrying the current source or changing its audio mode reattaches player events and polling to the new guest instance.
+- Retired Videasy and Vidking entries are clearly marked unavailable and skipped by defaults, remembered sources and next-server selection. Existing preferences are retained.
+- VidLink is the fallback default for movies and TV; this does not guarantee its availability for every title.
+- MultiEmbed's observed HTTPS redirect to streamingnow.mov is permitted. Arbitrary cross-origin takeovers and popups remain blocked.
+- Video errors before duration metadata exists now reach the existing recovery controls instead of being discarded.
+
+VidSrc, vidsrc.mov and MovieTV API remain available. Page-load probes alone do not prove playback; live full-stream acceptance remains unverified. Provider outages and missing titles cannot be repaired inside the app.
+
+
 ## 2.8.1 - Ad protection update
 
 - Bundled EasyList network filtering and standard cosmetic rules, available offline.

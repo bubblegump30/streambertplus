@@ -23,3 +23,13 @@ The isolated Electron ad fixture checks blocked ad scripts, CSS hiding in main/n
 Production dependency audit: 0 known vulnerabilities at build time. Development dependency audit is separate.
 The screenshot reported by the user is not itself proof that this exact live provider overlay is resolved. Live provider acceptance remains pending.
 
+
+## 2.8.2 provider compatibility
+
+19 unit tests cover retired-source migration, bounded redirect exceptions and video failures before metadata. The native ad fixture also checks the real Electron redirect event sequence with local HTTPS fixtures while continuing to deny arbitrary navigation.
+Provider probes are opt-in diagnostics only. They use an isolated profile, leave verification challenges untouched, request short playback, compare media clocks, then pause and close the players. Short advancing samples do not establish complete playback or availability for every title.
+
+
+Short live samples on November 10, 2026 used TMDB movie 550 and TV 1399 S1E1. VidSrc, vidsrc.mov and MovieTV API all showed advancing movie clocks with long-form durations and no media error. For TV, vidsrc.mov and MovieTV API showed two advancing samples; VidSrc only reached a valid playing sample at the second observation, after a slower load. These were isolated Electron tests of the protection module, not complete end-to-end watch-through tests in the packaged app.
+The packaged ad, simulated playback/resume (including same-server retry) and layout fixtures all passed.
+

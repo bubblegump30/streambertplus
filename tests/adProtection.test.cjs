@@ -28,3 +28,20 @@ test('guest popup and cross-origin navigation attempts are denied in main and po
   assert.equal(safeNavigation('https://player.example.org:444/','https://player.example.org/'),false);
 });
 
+
+test('only the observed MultiEmbed HTTPS redirect is allowed across origins', () => {
+  assert.equal(safeNavigation('https://streamingnow.mov/?play=fixture','https://multiembed.mov/?video_id=550&tmdb=1',true),true);
+  assert.equal(safeNavigation('https://streamingnow.mov/?play=fixture','https://multiembed.mov/',false),false);
+  assert.equal(safeNavigation('https://streamingnow.mov.evil.test/','https://multiembed.mov/',true),false);
+  assert.equal(safeNavigation('http://streamingnow.mov/','https://multiembed.mov/',true),false);
+  assert.equal(safeNavigation('https://user:pass@streamingnow.mov/','https://multiembed.mov/',true),false);
+  const wc=new EventEmitter();wc.getURL=()=>'';wc.setWindowOpenHandler=()=>{};
+  protectContents(wc,()=>{});
+  wc.emit('did-start-navigation',{},'https://multiembed.mov/?video_id=550&tmdb=1',false,true);
+  let prevented=false;
+  wc.emit('will-redirect',{preventDefault(){prevented=true}},'https://streamingnow.mov/?play=fixture',false,true);
+  assert.equal(prevented,false);
+  wc.emit('will-redirect',{preventDefault(){prevented=true}},'https://advert.example.org/',false,true);
+  assert.equal(prevented,true);
+});
+

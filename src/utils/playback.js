@@ -18,13 +18,15 @@ export function getFavorites() {
 export function setFavorites(ids) {
   storage.set(FAVORITES, [...new Set(ids.filter((id) => IDS.has(id)))]);
 }
-export function orderedSources(favorites = getFavorites()) {
+export function orderedSources(favorites = getFavorites(), includeUnavailable = false) {
   const byId = new Map(PLAYER_SOURCES.map((source) => [source.id, source]));
-  return [...favorites.map((id) => byId.get(id)).filter(Boolean), ...PLAYER_SOURCES.filter((source) => !favorites.includes(source.id))];
+  const ordered = [...favorites.map((id) => byId.get(id)).filter(Boolean), ...PLAYER_SOURCES.filter((source) => !favorites.includes(source.id))];
+  const active = ordered.filter((source) => source.available !== false);
+  return includeUnavailable ? [...active, ...ordered.filter((source) => source.available === false)] : active;
 }
 export function preferredSource(mediaKey, titleKey, anime = false) {
   const successes = readRecords(SUCCESS);
-  const supported = (id) => IDS.has(id) && (anime || !PLAYER_SOURCES.find((source) => source.id === id)?.async);
+  const supported = (id) => IDS.has(id) && PLAYER_SOURCES.find((source) => source.id === id)?.available !== false && (anime || !PLAYER_SOURCES.find((source) => source.id === id)?.async);
   const candidates = [successes[mediaKey]?.sourceId, successes[titleKey]?.sourceId, ...getFavorites(), anime ? ANIME_DEFAULT_SOURCE : storage.get("playerSource"), NON_ANIME_DEFAULT_SOURCE];
   return candidates.find(supported) || NON_ANIME_DEFAULT_SOURCE;
 }
@@ -68,3 +70,4 @@ export function rememberSuccessfulSource(mediaKey, titleKey, sourceId, previous,
   return true;
 }
 export const lastSuccessfulSource = (key) => (readRecords(SUCCESS))[key]?.sourceId || null;
+

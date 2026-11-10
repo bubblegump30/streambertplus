@@ -1,0 +1,121 @@
+{
+  "mode": "Short live playback in an isolated Electron profile using the updated adProtection module; not complete-stream or all-title acceptance",
+  "movieSample": "TMDB movie 550",
+  "tvSample": "TMDB TV 1399, season 1, episode 1",
+  "samples": [
+    {
+      "provider": "vidsrc",
+      "kind": "movie",
+      "first": {
+        "duration": 8348.42300000013,
+        "error": null,
+        "paused": false,
+        "readyState": 4,
+        "seconds": 7.631371
+      },
+      "second": {
+        "duration": 8348.42300000013,
+        "error": null,
+        "paused": false,
+        "readyState": 4,
+        "seconds": 9.640949
+      },
+      "observedAdvancement": true,
+      "observedStart": true
+    },
+    {
+      "provider": "vidsrc-mov",
+      "kind": "movie",
+      "first": {
+        "duration": 8348.42300000013,
+        "error": null,
+        "paused": false,
+        "readyState": 4,
+        "seconds": 7.52787
+      },
+      "second": {
+        "duration": 8348.42300000013,
+        "error": null,
+        "paused": false,
+        "readyState": 4,
+        "seconds": 9.539477
+      },
+      "observedAdvancement": true,
+      "observedStart": true
+    },
+    {
+      "provider": "movietvapi",
+      "kind": "movie",
+      "first": {
+        "duration": 8348.42300000013,
+        "error": null,
+        "paused": false,
+        "readyState": 4,
+        "seconds": 11.956413
+      },
+      "second": {
+        "duration": 8348.42300000013,
+        "error": null,
+        "paused": false,
+        "readyState": 4,
+        "seconds": 13.965563
+      },
+      "observedAdvancement": true,
+      "observedStart": true
+    },
+    {
+      "provider": "vidsrc",
+      "kind": "tv",
+      "first": null,
+      "second": {
+        "duration": 3697.2350000000574,
+        "error": null,
+        "paused": false,
+        "readyState": 4,
+        "seconds": 0.285937
+      },
+      "observedAdvancement": false,
+      "observedStart": true
+    },
+    {
+      "provider": "vidsrc-mov",
+      "kind": "tv",
+      "first": {
+        "duration": 3697.2350000000574,
+        "error": null,
+        "paused": false,
+        "readyState": 4,
+        "seconds": 7.239628
+      },
+      "second": {
+        "duration": 3697.2350000000574,
+        "error": null,
+        "paused": false,
+        "readyState": 4,
+        "seconds": 9.249079
+      },
+      "observedAdvancement": true,
+      "observedStart": true
+    },
+    {
+      "provider": "movietvapi",
+      "kind": "tv",
+      "first": {
+        "duration": 3697.2350000000574,
+        "error": null,
+        "paused": false,
+        "readyState": 4,
+        "seconds": 11.95443
+      },
+      "second": {
+        "duration": 3697.2350000000574,
+        "error": null,
+        "paused": false,
+        "readyState": 4,
+        "seconds": 13.968394
+      },
+      "observedAdvancement": true,
+      "observedStart": true
+    }
+  ]
+}

@@ -120,7 +120,7 @@ export default function PlaybackPlayer({ item, mediaType, season = 1, episode = 
     const crashed = () => { persist(); setPhase("error"); setMessage("The player process stopped. Retry or choose another source."); };
     wc.addEventListener("dom-ready", ready); wc.addEventListener("did-finish-load", ready); wc.addEventListener("did-fail-load", failed); wc.addEventListener("render-process-gone", crashed);
     return () => { wc.removeEventListener("dom-ready", ready); wc.removeEventListener("did-finish-load", ready); wc.removeEventListener("did-fail-load", failed); wc.removeEventListener("render-process-gone", crashed); };
-  }, [url, pip, persist]);
+  }, [url, pip, persist, sourceId, attempt, dub]);
   useEffect(() => {
     if (!url || !decision) return;
     let active = true, timer;
@@ -161,7 +161,7 @@ export default function PlaybackPlayer({ item, mediaType, season = 1, episode = 
     };
     timer = setTimeout(poll, 500);
     return () => { active = false; clearTimeout(timer); persist(); };
-  }, [url, decision, sourceId, mediaKey, titleKey, persist, duration, nextEpisode?.id]);
+  }, [url, decision, sourceId, attempt, dub, mediaKey, titleKey, persist, duration, nextEpisode?.id]);
   useEffect(() => {
     if (countdown === null || countdown === 0) return;
     const timer = setTimeout(() => {
@@ -236,3 +236,4 @@ export default function PlaybackPlayer({ item, mediaType, season = 1, episode = 
     {downloadOpen && <DownloadModal onClose={() => setDownloadOpen(false)} m3u8Url={streamUrl} subtitles={subtitles} mediaName={`${title}${mediaType === "tv" ? ` S${season} E${episode}` : ""}`} downloaderFolder={downloaderFolder} setDownloaderFolder={(folder) => { setDownloaderFolder(folder); storage.set("downloaderFolder", folder); }} onOpenSettings={onSettings} onDownloadStarted={onDownloadStarted} mediaId={item.id} mediaType={mediaType} posterPath={item.poster_path} tmdbId={item.id} season={mediaType === "tv" ? season : undefined} episode={mediaType === "tv" ? episode : undefined} />}
   </section>;
 }
+

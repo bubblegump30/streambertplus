@@ -30,9 +30,9 @@ test('favorite ordering is deduplicated and observed success wins per title', ()
   assert.equal(JSON.stringify(api.getFavorites()), JSON.stringify(['vidlink', 'videasy']));
   assert.equal(api.orderedSources()[0].id, 'vidlink');
   assert.equal(api.preferredSource('tv_1_s1e1', 'tv_1'), 'vidlink');
-  api.rememberSuccessfulSource('tv_1_s1e1', 'tv_1', 'vidking', sample(10), sample(11));
-  assert.equal(api.preferredSource('tv_1_s1e1', 'tv_1'), 'vidking');
-  assert.equal(api.preferredSource('tv_1_s1e2', 'tv_1'), 'vidking');
+  api.rememberSuccessfulSource('tv_1_s1e1', 'tv_1', 'multiembed', sample(10), sample(11));
+  assert.equal(api.preferredSource('tv_1_s1e1', 'tv_1'), 'multiembed');
+  assert.equal(api.preferredSource('tv_1_s1e2', 'tv_1'), 'multiembed');
   assert.equal(api.preferredSource('tv_2_s1e1', 'tv_2'), 'vidlink');
 });
 test('bookmarks migrate legacy seconds and percentages and reject invalid samples', () => {
@@ -108,3 +108,22 @@ test('external player rejects non-network URLs and embedded credentials without 
   }
   assert.equal(calls().spawns, 0);
 });
+
+
+test('retired providers are skipped even when saved as favorites, defaults or last success', () => {
+  const { api, values } = loadPlayback();
+  values.set('streambert_playerSource', JSON.stringify('vidking'));
+  api.setFavorites(['videasy', 'vidking']);
+  api.rememberSuccessfulSource('movie_55','movie_55','vidking',sample(10),sample(11));
+  assert.equal(api.preferredSource('movie_55','movie_55'),'vidlink');
+  assert.ok(api.orderedSources().every(source=>source.available !== false));
+  assert.equal(api.orderedSources(api.getFavorites(),true).filter(source=>source.available===false).length,2);
+});
+
+
+test('a video failure before metadata is available reaches the existing recovery UI', async () => {
+  const fixture=loadIpc({duration:NaN,currentTime:0,paused:true,readyState:0,error:{code:4}});
+  const result=await fixture.handlers.get('playback-snapshot')({sender:{id:7}}, {id:22,expectedDuration:7200});
+  assert.equal(result.errorCode,4);
+});
+

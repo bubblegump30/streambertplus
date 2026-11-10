@@ -10,10 +10,13 @@ function blocksRequest(details) {
   // Keep Electron's resource type and initiator: filter exceptions and first-party rules matter.
   return getEngine().match(Request.fromRawDetails({ url: details.url, sourceUrl: details.referrer || '', type: details.resourceType || 'other' })).match;
 }
-function safeNavigation(url, current) {
+// Confirmed HTTP redirect pair from MultiEmbed's public movie and TV endpoints.
+const PLAYER_REDIRECTS = new Map([['https://multiembed.mov', new Set(['https://streamingnow.mov'])]]);
+function safeNavigation(url, current, isRedirect = false) {
   try {
     const next = new URL(url), base = new URL(current);
-    return ['http:', 'https:'].includes(next.protocol) && next.origin === base.origin;
+    if (!['http:', 'https:'].includes(next.protocol) || next.username || next.password) return false;
+    return next.origin === base.origin || (isRedirect && base.protocol === 'https:' && PLAYER_REDIRECTS.get(base.origin)?.has(next.origin) === true);
   } catch { return false; }
 }
 const protectedContents = new WeakSet();
@@ -21,12 +24,18 @@ function protectContents(wc, recordBlocked) {
   if (protectedContents.has(wc)) return;
   protectedContents.add(wc);
   wc.setWindowOpenHandler(({ url }) => { recordBlocked(url); return { action: 'deny' }; });
-  const navigate = (event, url) => {
-    if (!safeNavigation(url, wc.getURL())) { event.preventDefault(); recordBlocked(url); }
+  let navigationUrl = wc.getURL();
+  wc.on('did-start-navigation', (_event, url, _inPlace, isMainFrame) => {
+    if (isMainFrame) navigationUrl = url;
+  });
+  const navigate = (event, url, isRedirect = false) => {
+    if (!safeNavigation(url, navigationUrl || wc.getURL(), isRedirect) || blocksRequest({url,referrer:navigationUrl || wc.getURL(),resourceType:'mainFrame'})) {
+      event.preventDefault(); recordBlocked(url);
+    }
   };
-  // Programmatic loadURL/src changes still work; unsolicited guest navigation cannot leave its origin.
-  wc.on('will-navigate', navigate);
-  wc.on('will-redirect', (event, url, _inPlace, isMainFrame) => { if (isMainFrame) navigate(event, url); });
+  // Only a confirmed server redirect pair can cross origins; links/popups cannot use this exception.
+  wc.on('will-navigate', (event, url) => navigate(event, url));
+  wc.on('will-redirect', (event, url, _inPlace, isMainFrame) => { if (isMainFrame) navigate(event, url, true); });
   const applyCosmetics = async (frame) => {
     try {
       if (!frame || frame.detached) return;

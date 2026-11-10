@@ -128,6 +128,8 @@ export const tmdbFetch = async (path, apiKey) => {
 export const PLAYER_SOURCES = [
   {
     id: "videasy",
+    available: false,
+    unavailableReason: "Provider shutdown announced for September 15, 2026",
     label: "Videasy",
     tag: null,
     note: null,
@@ -157,6 +159,8 @@ export const PLAYER_SOURCES = [
   },
   {
     id: "vidking",
+    available: false,
+    unavailableReason: "Mirror shutdown announced by Videasy for September 15, 2026",
     label: "Vidking",
     tag: null,
     note: null,
@@ -195,7 +199,7 @@ export const getSourceUrl = (
   subtitleLang = null,
 ) => {
   const src =
-    PLAYER_SOURCES.find((s) => s.id === sourceId) ?? PLAYER_SOURCES[0];
+    PLAYER_SOURCES.find((s) => s.id === sourceId) ?? PLAYER_SOURCES.find((s) => s.available !== false && !s.async);
   const baseUrl =
     type === "movie" ? src.movieUrl(id) : src.tvUrl(id, season, ep);
   const url = new URL(baseUrl);
@@ -233,7 +237,7 @@ export const sourceIsAsync = (sourceId) =>
 
 // Return the next non-async source after `currentId` in PLAYER_SOURCES order
 export const getNextNonAsyncSource = (currentId) => {
-  const nonAsync = PLAYER_SOURCES.filter((s) => !s.async);
+  const nonAsync = PLAYER_SOURCES.filter((s) => !s.async && s.available !== false);
   if (nonAsync.length === 0) return null;
   const idx = nonAsync.findIndex((s) => s.id === currentId);
   // If currentId is itself non-async, return the next one (wrap around).
@@ -455,7 +459,7 @@ export const isAnimeContent = (item, details) => {
 
 // Default sources
 export const ANIME_DEFAULT_SOURCE = "allmanga";
-export const NON_ANIME_DEFAULT_SOURCE = "vidking";
+export const NON_ANIME_DEFAULT_SOURCE = "vidlink";
 
 // ── Episode Group fetch (localStorage + in-memory cache, 7-day TTL) ─────────
 // Episode groups almost never change -> cache aggressively across sessions.
@@ -501,3 +505,4 @@ export const fetchEpisodeGroup = async (groupId, apiKey) => {
   flushEgCache();
   return data;
 };
+
