@@ -17,11 +17,42 @@ This fork preserves the original Streambert authorship and GPL-3.0 license. The 
 
 The clean Discover layout, library, watchlist, all ten provider options, color themes, and refresh credit from Plus 2.7.1 remain.
 
+## Screenshots
+
+Streambert Plus 2.8.0 with the purple accent theme.
+
+### Discover and watchlist
+
+![Discover page with TV collections and sidebar watchlist](screenshots/plus-discover-watchlist.jpg)
+
+### Movies and audience favorites
+
+![Trending movies and highly rated collections](screenshots/plus-discover-movies.jpg)
+
+### General settings
+
+![App version, metadata language and content controls](screenshots/plus-settings-general.jpg)
+
+### Themes and appearance
+
+![Themes, accent colors, font sizes and reduced animations](screenshots/plus-settings-themes.jpg)
+
+### Server selection
+
+![Ten provider options with favorite controls](screenshots/plus-server-picker.jpg)
+
+Screenshots show the interface; they do not verify playback availability for every provider or title.
+
+<details>
+<summary>Playback acceptance screenshots</summary>
+
 ![Favorite servers, using local acceptance fixtures](screenshots/plus-servers.png)
 
 ![Resume choice, using local acceptance fixtures](screenshots/plus-resume.png)
 
-These screenshots use fictional local test titles. They are interface acceptance evidence, not real-provider playback proof.
+These acceptance screenshots use fictional local test titles and a simulated media clock.
+
+</details>
 
 ## Run or build
 
@@ -68,3 +99,4 @@ Upstream binary auto-installation is disabled so an upstream installer cannot re
 - Refreshed by Kyle Austin Hillier.
 - GPL-3.0: see [LICENSE](LICENSE).
 - This product uses the TMDB API but is not endorsed or certified by TMDB.
+
