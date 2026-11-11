@@ -19,6 +19,17 @@ function safeNavigation(url, current, isRedirect = false) {
     return next.origin === base.origin || (isRedirect && base.protocol === 'https:' && PLAYER_REDIRECTS.get(base.origin)?.has(next.origin) === true);
   } catch { return false; }
 }
+// Base64's fixed alphabet cannot terminate a JavaScript literal. Decode only to CSS text;
+// remote selectors and stylesheet content are never concatenated as executable source.
+function stylesheetScript(styles) {
+  const payload = Buffer.from(styles, 'utf8').toString('base64');
+  return `(() => {
+    const css=new TextDecoder().decode(Uint8Array.from(atob('${payload}'),c=>c.charCodeAt(0)));
+    let s=document.getElementById('streambert-ad-styles');
+    if(!s){s=document.createElement('style');s.id='streambert-ad-styles';(document.head||document.documentElement).append(s);}
+    if(s.textContent!==css)s.textContent=css;
+  })()`;
+}
 const protectedContents = new WeakSet();
 const cosmeticVersions = new WeakMap();
 const cosmeticBusy = new WeakSet();
@@ -45,28 +56,20 @@ function protectContents(wc, recordBlocked) {
       const url = frame.url;
       if (!/^https?:/.test(url)) return;
       const request = Request.fromRawDetails({ url, type: 'main_frame' });
-      const previous = cosmeticVersions.get(frame);
-      const lastVersion = previous?.url === url ? previous.version : -1;
       const dom = await Promise.race([
         frame.executeJavaScript(`(() => {
-          const key='__streambertCosmeticWatch';
-          let state=window[key];
-          if(!state || typeof state.version!=='number') {
-            state={version:0};window[key]=state;
-            const observer=new MutationObserver(()=>state.version++);
-            observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['id','class']});
-          }
-          const hasStyle=!!document.getElementById('streambert-ad-styles');
-          if(state.version===${lastVersion} && hasStyle)return null;
           const nodes=[...document.querySelectorAll('[id],[class]')].slice(0,3000);
-          return {version:state.version,ids:nodes.map(n=>n.id).filter(Boolean),classes:[...new Set(nodes.flatMap(n=>[...n.classList]))]};
+          return {styleText:document.getElementById('streambert-ad-styles')?.textContent ?? null,ids:nodes.map(n=>n.id).filter(Boolean),classes:[...new Set(nodes.flatMap(n=>[...n.classList]))]};
         })()`),
         new Promise(resolve => { const timer = setTimeout(() => resolve(null), 1500); timer.unref?.(); })
       ]);
       if (!dom || frame.detached || frame.url !== url) return;
+      const signature = JSON.stringify([dom.ids, dom.classes]);
+      const previous = cosmeticVersions.get(frame);
+      if (previous?.url === url && previous.signature === signature && dom.styleText === previous.styles) return;
       const { styles } = getEngine().getCosmeticsFilters({ url, hostname: request.hostname, domain: request.domain, ids: dom.ids, classes: dom.classes, getInjectionRules: false, getExtendedRules: false });
-      cosmeticVersions.set(frame,{url,version:dom.version});
-      if (styles) await frame.executeJavaScript(`(() => { let s=document.getElementById('streambert-ad-styles'); if(!s){s=document.createElement('style');s.id='streambert-ad-styles';(document.head||document.documentElement).append(s);} if(s.textContent!==${JSON.stringify(styles)})s.textContent=${JSON.stringify(styles)}; })()`);
+      cosmeticVersions.set(frame,{url,signature,styles});
+      if (typeof styles === 'string' && styles) await frame.executeJavaScript(stylesheetScript(styles));
     } catch { /* A guest can navigate or disappear during inspection. */ }
     finally { if(frame)cosmeticBusy.delete(frame); }
   };
@@ -86,7 +89,7 @@ function protectContents(wc, recordBlocked) {
   dynamicTimer.unref?.();
   wc.once('destroyed', () => { timers.forEach(clearTimeout); clearInterval(dynamicTimer); });
 }
-module.exports = { getEngine, blocksRequest, safeNavigation, protectContents };
+module.exports = { getEngine, blocksRequest, safeNavigation, protectContents, stylesheetScript };
 
 
 

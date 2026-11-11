@@ -45,3 +45,17 @@ test('only the observed MultiEmbed HTTPS redirect is allowed across origins', ()
   assert.equal(prevented,true);
 });
 
+
+test('stylesheet data cannot escape into executable JavaScript', () => {
+  const vm=require('node:vm');
+  const {stylesheetScript}=require('../src/ipc/adProtection');
+  for(const css of ["body{color:red}", "';globalThis.injected=true;//", '</style><script>globalThis.injected=true</script>', '\u2028\u2029\u0000"\\\n', '.caf\u00e9{content:"\ud83c\udfac"}']) {
+    let style;
+    const document={getElementById:()=>style,createElement:()=>({}),head:{append:value=>{style=value}}};
+    const context={document,TextDecoder,Uint8Array,atob:encoded=>Buffer.from(encoded,'base64').toString('binary')};
+    vm.runInNewContext(stylesheetScript(css),context);
+    assert.equal(style.textContent,css);
+    assert.equal(context.injected,undefined);
+  }
+});
+

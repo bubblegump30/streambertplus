@@ -48,3 +48,8 @@ The layout and playback fixtures verify purple backgrounds and white wording on 
 
 The Electron UI fixture selects Movies, TV shows and For you through Settings, verifies the start page is Discover, reloads the app and checks the corresponding active Discover tab. The preference is included in the normal backup key list.
 
+
+## 2.8.5 code scanning
+
+21 unit tests pass, including stylesheet payload round trips with quotes, script tags, Unicode separators, null and non-ASCII characters; injected code is not executed. Native ad checks verify exact-host matching rejects lookalike hosts and domain text in paths/query strings while preserving overlays, media/subtitle traffic and navigation protections.
+

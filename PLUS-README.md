@@ -1,6 +1,14 @@
 # Streambert Plus 2.8.0 - Clean Layout
 
 
+## 2.8.5 - Code-scanning fixes
+
+- Ad-test URL checks compare parsed hostnames instead of matching domain text anywhere in a URL.
+- Stylesheets cross into guest frames as base64-encoded UTF-8 data, not JSON-derived executable source.
+- DOM snapshots use a fixed script; page-controlled cached values are no longer interpolated into JavaScript.
+- Security regression tests include injection-shaped strings, Unicode separators and lookalike domains.
+
+
 ## 2.8.4 - Discover startup tab
 
 Settings > Start Page now includes For you, Movies and TV shows buttons. Selecting one saves automatically and sets the launch page to Discover. The next app launch opens that tab. The preference is included in backups. Existing Library and Downloads start-page choices remain available.
