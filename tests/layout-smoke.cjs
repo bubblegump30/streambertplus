@@ -70,10 +70,15 @@ app.on('browser-window-created', (_event, win) => {
       assert.ok(await run('Array.from(document.querySelectorAll(".discover-collection .card-year")).every(e => e.textContent.includes("TV show"))'));
       await run('document.querySelector(".discover-feature .btn-primary").click()');
       await waitFor(win, 'document.querySelectorAll(".episode-card").length === 4');
+      const seasonAction=await run(`(() => {const b=[...document.querySelectorAll('button')].find(b=>b.textContent==='Mark season watched');const s=getComputedStyle(b);return {color:s.color,background:s.backgroundColor};})()`);
+      assert.equal(seasonAction.color,'rgb(255, 255, 255)');
+      assert.equal(seasonAction.background,'rgb(124, 58, 237)');
       await snap('TV-Episodes.png');
       await run('document.querySelector(".episode-open").click()');
       await waitFor(win, '!!document.querySelector("button[title^=Change]")');
       await snap('TV-Player.png');
+      await run(`document.querySelector('.playback-secondary').scrollIntoView({block:'center'})`);
+      await snap('Purple-Player-Actions.png');
       await run('document.querySelector("button[title^=Change]").click()');
       await waitFor(win, 'document.querySelectorAll(".source-dropdown__item").length === 10');
       await run('Array.from(document.querySelectorAll(".source-dropdown__item")).find(b => b.textContent.includes("VidLink")).click()');
@@ -112,3 +117,4 @@ app.on('browser-window-created', (_event, win) => {
 });
 require(process.env.STREAMBERT_TEST_ASAR || '../index.js');
 setTimeout(()=>{console.error('Layout smoke timeout');app.exit(1);},55000).unref();
+

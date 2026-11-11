@@ -1,0 +1,119 @@
+{
+  "mode": "Bounded live EmbedWave samples; not full-session or all-title acceptance",
+  "results": [
+    {
+      "kind": "movie",
+      "loadError": null,
+      "first": [
+        {
+          "host": "embedwave.cc",
+          "data": {
+            "adStyles": true,
+            "challenge": false,
+            "videos": []
+          }
+        },
+        {
+          "host": "cinesrc.st",
+          "data": {
+            "adStyles": true,
+            "challenge": false,
+            "videos": [
+              {
+                "duration": 7984,
+                "error": null,
+                "paused": false,
+                "seconds": 3.936339
+              }
+            ]
+          }
+        }
+      ],
+      "second": [
+        {
+          "host": "embedwave.cc",
+          "data": {
+            "adStyles": true,
+            "challenge": false,
+            "videos": []
+          }
+        },
+        {
+          "host": "cinesrc.st",
+          "data": {
+            "adStyles": true,
+            "challenge": false,
+            "videos": [
+              {
+                "duration": 7984,
+                "error": null,
+                "paused": false,
+                "seconds": 5.951599
+              }
+            ]
+          }
+        }
+      ],
+      "blockedHosts": [
+        "adexchangerapid.com"
+      ]
+    },
+    {
+      "kind": "tv",
+      "loadError": null,
+      "first": [
+        {
+          "host": "embedwave.cc",
+          "data": {
+            "adStyles": true,
+            "challenge": false,
+            "videos": []
+          }
+        },
+        {
+          "host": "cinesrc.st",
+          "data": {
+            "adStyles": true,
+            "challenge": false,
+            "videos": [
+              {
+                "duration": 3156.0332070000113,
+                "error": null,
+                "paused": false,
+                "seconds": 5.259657
+              }
+            ]
+          }
+        }
+      ],
+      "second": [
+        {
+          "host": "embedwave.cc",
+          "data": {
+            "adStyles": true,
+            "challenge": false,
+            "videos": []
+          }
+        },
+        {
+          "host": "cinesrc.st",
+          "data": {
+            "adStyles": true,
+            "challenge": false,
+            "videos": [
+              {
+                "duration": 3156.0332070000113,
+                "error": null,
+                "paused": false,
+                "seconds": 7.275612
+              }
+            ]
+          }
+        }
+      ],
+      "blockedHosts": [
+        "adexchangerapid.com"
+      ]
+    }
+  ]
+}

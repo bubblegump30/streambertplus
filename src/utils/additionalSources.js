@@ -18,7 +18,7 @@ export const ADDITIONAL_SOURCES = [
     tvUrl: (id, season, ep) => `https://multiembed.mov/?video_id=${id}&tmdb=1&s=${season}&e=${ep}`,
   },
   {
-    id: "embedwave", label: "EmbedWave", note: "Additional", params: {},
+    id: "embedwave", label: "EmbedWave", note: "Cinesrc backend", params: { server: "cinesrc" },
     movieUrl: (id) => `https://embedwave.cc/embed/movie/${id}`,
     tvUrl: (id, season, ep) => `https://embedwave.cc/embed/tv/${id}/${season}/${ep}`,
   },
@@ -33,3 +33,4 @@ export const ADDITIONAL_SOURCES = [
     tvUrl: (id, season, ep) => `https://movietvapi.stream/embed/tv/${id}/${season}/${ep}`,
   },
 ];
+

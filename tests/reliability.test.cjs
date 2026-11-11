@@ -99,3 +99,16 @@ test('packaging includes the pop-out preload and a distinct app identity', () =>
   assert.ok(fs.existsSync('popout-preload.js'));
   assert.notEqual(pkg.build.appId, 'com.truelockmc.streambert');
 });
+
+
+test('EmbedWave movie and TV routes pin the tested backend without losing episode identifiers', () => {
+  const api=loadApi();
+  const movie=new URL(api.getSourceUrl('embedwave','movie',550));
+  const tv=new URL(api.getSourceUrl('embedwave','tv',1399,2,3));
+  assert.equal(movie.origin,'https://embedwave.cc');
+  assert.equal(movie.pathname,'/embed/movie/550');
+  assert.equal(tv.pathname,'/embed/tv/1399/2/3');
+  assert.equal(movie.searchParams.get('server'),'cinesrc');
+  assert.equal(tv.searchParams.get('server'),'cinesrc');
+});
+

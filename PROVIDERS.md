@@ -33,3 +33,9 @@ VidSrc (vsembed.su), vidsrc.mov and MovieTV API returned player HTML in initial 
 
 Short live follow-up: after Play, all three named active providers reached playing movie samples. Both vidsrc.mov and MovieTV API showed two advancing TV samples; VidSrc TV began playing late in the observation window. This narrows the earlier page-only uncertainty for those sample IDs, but does not guarantee other titles, longer sessions or every internal server.
 
+
+## 2.8.3 EmbedWave backend
+
+EmbedWave's documented server=cinesrc option (https://embedwave.cc/docs) is now pinned by default for movie and TV routes. Its internal server menu remains available. In isolated short checks on November 11, 2026, the selected Cinesrc backend showed advancing video clocks on a sample movie and TV episode while the ad stylesheet was present in both outer and nested frames. The check blocked adexchangerapid.com requests. This is not a guarantee of zero ads or uninterrupted playback for all titles.
+The common player/trailer session filters, popup denial and ongoing cosmetic checks apply across all source choices; no source is exempted from ad filtering.
+

@@ -1,6 +1,18 @@
 # Streambert Plus
 
 
+## 2.8.3 - Overlay protection and player buttons
+
+- Pop out, External player, Download, Blocked and Mark season watched now have purple backgrounds and white text, including readable disabled states.
+- Shared-session overlay, request and popup protection is applied to every server source.
+- EmbedWave opens its documented Cinesrc backend by default instead of the Multi HD backend that attempted to inject an ad script in the investigation.
+- Cosmetic filtering watches DOM changes throughout playback, including late frames and overlays that appear after the initial load.
+- If a provider removes the ad stylesheet, the app restores it. Repeated scans skip unchanged documents and overlapping frame work.
+- Popup blocking and the narrow redirect guard remain enabled.
+
+A short Cinesrc movie sample showed an advancing clock. This does not guarantee an ad-free session for every title or backend. Verification challenges and playback controls are not removed generically.
+
+
 ## 2.8.2 - Provider compatibility update
 
 - Retrying the current source or changing its audio mode reattaches player events and polling to the new guest instance.

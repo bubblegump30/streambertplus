@@ -72,6 +72,10 @@ app.on('browser-window-created', (_event, win) => {
       await run('document.querySelector(".detail-actions .btn-primary").click()');
       await wait('!!document.querySelector("button[title^=Change]")');await delay(2000);
       assert.equal(await run('localStorage.getItem("streambert_playbackSuccessfulSources")'),null,'Loaded page must not become a successful source');
+      const actionColors=await run(`Array.from(document.querySelectorAll('.playback-secondary .btn')).map(b=>({text:getComputedStyle(b).color,background:getComputedStyle(b).backgroundColor}))`);
+      assert.equal(actionColors.length,4);
+      for(const colors of actionColors){assert.equal(colors.text,'rgb(255, 255, 255)');assert.ok(['rgb(124, 58, 237)','rgb(100, 66, 145)'].includes(colors.background));}
+
       await run('document.querySelector("button[title^=Change]").click()');
       await wait('document.querySelectorAll(".playback-server-card").length===10');
       await run('Array.from(document.querySelectorAll(".playback-server-card")).find(e=>e.querySelector("strong").textContent==="VidLink").querySelector(".playback-server-options button").click()');

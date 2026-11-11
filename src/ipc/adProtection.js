@@ -20,6 +20,8 @@ function safeNavigation(url, current, isRedirect = false) {
   } catch { return false; }
 }
 const protectedContents = new WeakSet();
+const cosmeticVersions = new WeakMap();
+const cosmeticBusy = new WeakSet();
 function protectContents(wc, recordBlocked) {
   if (protectedContents.has(wc)) return;
   protectedContents.add(wc);
@@ -37,19 +39,36 @@ function protectContents(wc, recordBlocked) {
   wc.on('will-navigate', (event, url) => navigate(event, url));
   wc.on('will-redirect', (event, url, _inPlace, isMainFrame) => { if (isMainFrame) navigate(event, url, true); });
   const applyCosmetics = async (frame) => {
+    if (!frame || frame.detached || cosmeticBusy.has(frame)) return;
+    cosmeticBusy.add(frame);
     try {
-      if (!frame || frame.detached) return;
       const url = frame.url;
       if (!/^https?:/.test(url)) return;
       const request = Request.fromRawDetails({ url, type: 'main_frame' });
+      const previous = cosmeticVersions.get(frame);
+      const lastVersion = previous?.url === url ? previous.version : -1;
       const dom = await Promise.race([
-        frame.executeJavaScript(`(() => { const nodes = [...document.querySelectorAll('[id],[class]')].slice(0,3000); return { ids: nodes.map(n=>n.id).filter(Boolean), classes: [...new Set(nodes.flatMap(n=>[...n.classList]))] }; })()`),
+        frame.executeJavaScript(`(() => {
+          const key='__streambertCosmeticWatch';
+          let state=window[key];
+          if(!state || typeof state.version!=='number') {
+            state={version:0};window[key]=state;
+            const observer=new MutationObserver(()=>state.version++);
+            observer.observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['id','class']});
+          }
+          const hasStyle=!!document.getElementById('streambert-ad-styles');
+          if(state.version===${lastVersion} && hasStyle)return null;
+          const nodes=[...document.querySelectorAll('[id],[class]')].slice(0,3000);
+          return {version:state.version,ids:nodes.map(n=>n.id).filter(Boolean),classes:[...new Set(nodes.flatMap(n=>[...n.classList]))]};
+        })()`),
         new Promise(resolve => { const timer = setTimeout(() => resolve(null), 1500); timer.unref?.(); })
       ]);
       if (!dom || frame.detached || frame.url !== url) return;
       const { styles } = getEngine().getCosmeticsFilters({ url, hostname: request.hostname, domain: request.domain, ids: dom.ids, classes: dom.classes, getInjectionRules: false, getExtendedRules: false });
-      if (styles) await frame.executeJavaScript(`(() => { let s=document.getElementById('streambert-ad-styles'); if(!s){s=document.createElement('style');s.id='streambert-ad-styles';(document.head||document.documentElement).append(s);} s.textContent=${JSON.stringify(styles)}; })()`);
+      cosmeticVersions.set(frame,{url,version:dom.version});
+      if (styles) await frame.executeJavaScript(`(() => { let s=document.getElementById('streambert-ad-styles'); if(!s){s=document.createElement('style');s.id='streambert-ad-styles';(document.head||document.documentElement).append(s);} if(s.textContent!==${JSON.stringify(styles)})s.textContent=${JSON.stringify(styles)}; })()`);
     } catch { /* A guest can navigate or disappear during inspection. */ }
+    finally { if(frame)cosmeticBusy.delete(frame); }
   };
   const refresh = () => {
     if (wc.isDestroyed()) return;
@@ -63,7 +82,9 @@ function protectContents(wc, recordBlocked) {
   };
   wc.on('dom-ready', schedule);
   wc.on('did-frame-finish-load', refresh);
-  wc.once('destroyed', () => timers.forEach(clearTimeout));
+  const dynamicTimer=setInterval(refresh,2000);
+  dynamicTimer.unref?.();
+  wc.once('destroyed', () => { timers.forEach(clearTimeout); clearInterval(dynamicTimer); });
 }
 module.exports = { getEngine, blocksRequest, safeNavigation, protectContents };
 

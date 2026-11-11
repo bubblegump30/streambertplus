@@ -33,3 +33,13 @@ Provider probes are opt-in diagnostics only. They use an isolated profile, leave
 Short live samples on November 10, 2026 used TMDB movie 550 and TV 1399 S1E1. VidSrc, vidsrc.mov and MovieTV API all showed advancing movie clocks with long-form durations and no media error. For TV, vidsrc.mov and MovieTV API showed two advancing samples; VidSrc only reached a valid playing sample at the second observation, after a slower load. These were isolated Electron tests of the protection module, not complete end-to-end watch-through tests in the packaged app.
 The packaged ad, simulated playback/resume (including same-server retry) and layout fixtures all passed.
 
+
+## 2.8.3 EmbedWave investigation
+
+The default EmbedWave route loaded web.nxsha.app and attempted a request to oc.parergygrates.com, blocked by the bundled network rules. The exact user-reported overlay was not reproduced for the sample ID.
+The documented server=cinesrc option loaded cinesrc.st and yielded a playing long-form video sample at 13.93 and 15.94 seconds. This is a brief isolated test, not a guarantee for a full session.
+The native fixture now checks ad markup inserted after startup and restoration after stylesheet removal, in addition to existing frame, request and navigation coverage.
+
+The shared-session fixture loads every configured source origin with local intercepted HTML and verifies ad-request cancellation and popup denial for each. This establishes protection coverage, not that every real ad on every changing provider is blocked.
+The layout and playback fixtures verify purple backgrounds and white wording on the requested player and season actions.
+

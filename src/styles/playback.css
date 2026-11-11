@@ -55,3 +55,30 @@
 .playback-episode-actions { padding: 0 15px 15px; display: flex; flex-wrap: wrap; gap: 7px; }
 .playback-episode-actions .btn { padding: 5px 8px; min-height: 28px; font-size: 10px; }
 @media(max-width:760px) { .playback-workspace { margin: 20px 17px 0; } .playback-status { width: 100%; max-width: none; margin-left: 0; } .playback-resume-choice { padding: 24px; } .playback-server-dialog { padding: 18px; max-height: 88vh; } .playback-server-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } .playback-modal-backdrop { padding: 12px; } .playback-episode-heading { margin: 20px 17px -5px; } }
+/* Requested player actions stay purple with white wording in every theme. */
+.playback-secondary .btn,
+.playback-detail-page > .section > .discover-row-heading > .btn {
+  background: #7c3aed;
+  border-color: #7c3aed;
+  color: #fff;
+}
+.playback-secondary .btn:not(:disabled):hover,
+.playback-detail-page > .section > .discover-row-heading > .btn:not(:disabled):hover {
+  background: #6d28d9;
+  border-color: #6d28d9;
+  color: #fff;
+}
+.playback-secondary .btn:focus-visible,
+.playback-detail-page > .section > .discover-row-heading > .btn:focus-visible {
+  outline: 3px solid #c4b5fd;
+  outline-offset: 3px;
+}
+.playback-secondary .btn:disabled,
+.playback-detail-page > .section > .discover-row-heading > .btn:disabled {
+  background: #644291;
+  border-color: #644291;
+  color: #fff;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
