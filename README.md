@@ -1,5 +1,29 @@
 # Streambert Plus
 
+**Refreshed by Kyle Austin Hillier.** A Windows desktop movie and TV browser with a clean layout, selectable color themes, favorite servers and guarded playback resume.
+
+## Download the latest release
+
+**Current release: [Streambert Plus 2.8.6](https://github.com/bubblegump30/streambertplus/releases/tag/v2.8.6).** This is a regular release, not a pre-release.
+
+- [Download Windows x64 ZIP](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.6/Streambert-Plus-2.8.6-Windows-x64.zip)
+- [Download matching source code](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.6/Streambert-Plus-2.8.6-Source.zip)
+- [SHA-256 checksums](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.6/SHA256.json)
+
+Close Streambert Plus, extract the **entire Windows ZIP** into a folder, and launch **Streambert Plus.exe**. Keep its supporting files beside the executable. Plus versions share the same application profile; keep your existing profile when updating.
+
+## 2.8.6 - MultiEmbed inline ad protection
+
+- Filters HTTPS player-document responses from the exact streamingnow.mov host used by MultiEmbed.
+- Removes identified inline advertising SDK scripts before they execute, preserving normal player and browser-verification scripts.
+- Blocks the targeted response if filtering fails.
+- Adds response-filtering, header-preservation and failure regression tests, plus dependency license notices.
+- Includes the purple buttons with white text and the saved For you / Movies / TV shows startup preference from earlier releases.
+
+**Verified for v2.8.6:** 26 automated tests and production builds passed on Windows and Linux in GitHub Actions. Packaged Windows ad-protection, playback/resume and layout fixtures passed. CodeQL passed with zero open code-scanning alerts at release time; the production dependency audit reported zero vulnerabilities. Uploaded ZIP integrity and SHA-256 checksums were checked.
+
+**Live playback limitation:** NCIS S1E1 testing removed two identified inline ad scripts, but MultiEmbed stalled at its browser verification before video playback. Ad-free NCIS playback and complete live ad coverage across all providers remain unverified. Controlled fixture checks do not establish that every third-party advertisement is blocked.
+
 
 ## 2.8.5 - Code-scanning fixes
 
@@ -46,11 +70,9 @@ VidSrc, vidsrc.mov and MovieTV API remain available. Page-load probes alone do n
 
 The filter snapshot updates with app releases. Provider changes, inline promotions and ads stitched into the actual video may still need source-specific fixes. Real verification challenges are not solved or bypassed. Live verification of the reported provider overlay remains pending.
 
-**Refreshed by Kyle Austin Hillier.** A Windows desktop movie and TV browser with a clean layout, selectable color themes, favorite servers and guarded playback resume.
-
 This fork preserves the original Streambert authorship and GPL-3.0 license. The Plus application was developed from the supplied Streambert 2.6.0 release; this repository also retains the upstream Git history. Upstream: https://github.com/truelockmc/streambert .
 
-## 2.8.0 - Playback & Resume preview
+## 2.8.0 - Playback and resume
 
 - Favorite and reorder servers. A title or episode can remember the last server on which a usable video clock actually advanced.
 - Explicit **Resume / Start over** choice. A provider guest is not created until that decision is made when a bookmark exists.
@@ -65,7 +87,7 @@ The clean Discover layout, library, watchlist, all ten provider options, color t
 
 ## Screenshots
 
-Streambert Plus 2.8.0 with the purple accent theme.
+Interface screenshots captured in Streambert Plus 2.8.0 with the purple accent theme. Version labels in these screenshots may differ from the current release.
 
 ### Discover and watchlist
 
@@ -117,7 +139,7 @@ Build a Windows folder package:
 npm run package:win
 ```
 
-The output is `release/win-unpacked`. Keep `Streambert Plus.exe`, `resources`, and the bundled DLLs together. The preview is unsigned. macOS/Linux package scripts are inherited, but this Plus release has only been packaged and tested locally on Windows.
+The output is `release/win-unpacked`. Keep `Streambert Plus.exe`, `resources`, and the bundled DLLs together. The Windows package is unsigned. macOS/Linux package scripts are inherited, but this Plus release has only been packaged and tested locally on Windows.
 
 On first launch, enter your own TMDB **API Read Access Token** in the app. The Plus profile is `%APPDATA%/Streambert Plus`; it is separate from upstream Streambert and is shared across Plus versions. Keep your credentials private. No user profile or real credential is committed here.
 
@@ -127,6 +149,7 @@ On first launch, enter your own TMDB **API Read Access Token** in the app. The P
 npm test
 npm run test:ui
 npm run test:playback
+npm run test:ads
 ```
 
 The UI tests run Electron with an isolated profile, intercepted HTTPS responses and local metadata. The playback test uses a simulated video clock to check success detection and resume behavior. It does not play real external streams. Run them on a desktop-capable environment. CI runs unit tests and the frontend build on Windows and Ubuntu.
