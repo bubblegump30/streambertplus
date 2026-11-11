@@ -4,13 +4,19 @@
 
 ## Download the latest release
 
-**Current release: [Streambert Plus 2.8.7](https://github.com/bubblegump30/streambertplus/releases/tag/v2.8.7).** This is a regular release, not a pre-release.
+**Current release: [Streambert Plus 2.8.8](https://github.com/bubblegump30/streambertplus/releases/tag/v2.8.8).** This is a regular release, not a pre-release.
 
-- [Download Windows x64 ZIP](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.7/Streambert-Plus-2.8.7-Windows-x64.zip)
-- [Download matching source code](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.7/Streambert-Plus-2.8.7-Source.zip)
-- [SHA-256 checksums](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.7/SHA256.json)
+- [Download Windows x64 ZIP](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.8/Streambert-Plus-2.8.8-Windows-x64.zip)
+- [Download matching source code](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.8/Streambert-Plus-2.8.8-Source.zip)
+- [SHA-256 checksums](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.8/SHA256.json)
 
 Close Streambert Plus, extract the **entire Windows ZIP** into a folder, and launch **Streambert Plus.exe**. Keep its supporting files beside the executable. Plus versions share the same application profile; keep your existing profile when updating.
+
+## 2.8.8 - More visible scrollbars
+
+- Increase horizontal and vertical scrollbar thickness from 4px to 14px.
+- Use the selected accent color for scrollbar thumbs, with an outlined track and brighter hover/drag states.
+- Apply the same treatment to collection rows, page scrolling, sidebar lists and blocked-request lists.
 
 ## 2.8.7 - AutoEmbed rotating-script protection
 
