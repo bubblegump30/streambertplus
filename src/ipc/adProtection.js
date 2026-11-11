@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { FiltersEngine, Request } = require('@ghostery/adblocker');
+const { protectPlayerHtml, protectedHtmlHost } = require('./playerHtmlProtection');
 let engine;
 function getEngine() {
   if (!engine) engine = FiltersEngine.parse(fs.readFileSync(path.join(__dirname, 'filters/easylist.txt'), 'utf8'), { loadNetworkFilters: true, loadCosmeticFilters: true });
@@ -36,13 +37,17 @@ const cosmeticBusy = new WeakSet();
 function protectContents(wc, recordBlocked) {
   if (protectedContents.has(wc)) return;
   protectedContents.add(wc);
+  const htmlProtection=protectPlayerHtml(wc,recordBlocked);
   wc.setWindowOpenHandler(({ url }) => { recordBlocked(url); return { action: 'deny' }; });
   let navigationUrl = wc.getURL();
   wc.on('did-start-navigation', (_event, url, _inPlace, isMainFrame) => {
-    if (isMainFrame) navigationUrl = url;
+    if (isMainFrame) {
+      navigationUrl = url;
+      if(protectedHtmlHost(url) && !htmlProtection.ready && wc.debugger)wc.stop();
+    }
   });
   const navigate = (event, url, isRedirect = false) => {
-    if (!safeNavigation(url, navigationUrl || wc.getURL(), isRedirect) || blocksRequest({url,referrer:navigationUrl || wc.getURL(),resourceType:'mainFrame'})) {
+    if ((protectedHtmlHost(url) && !htmlProtection.ready && wc.debugger) || !safeNavigation(url, navigationUrl || wc.getURL(), isRedirect) || blocksRequest({url,referrer:navigationUrl || wc.getURL(),resourceType:'mainFrame'})) {
       event.preventDefault(); recordBlocked(url);
     }
   };
@@ -90,6 +95,5 @@ function protectContents(wc, recordBlocked) {
   wc.once('destroyed', () => { timers.forEach(clearTimeout); clearInterval(dynamicTimer); });
 }
 module.exports = { getEngine, blocksRequest, safeNavigation, protectContents, stylesheetScript };
-
 
 

@@ -53,3 +53,10 @@ The Electron UI fixture selects Movies, TV shows and For you through Settings, v
 
 21 unit tests pass, including stylesheet payload round trips with quotes, script tags, Unicode separators, null and non-ASCII characters; injected code is not executed. Native ad checks verify exact-host matching rejects lookalike hosts and domain text in paths/query strings while preserving overlays, media/subtitle traffic and navigation protections.
 
+
+
+## Unreleased: MultiEmbed inline script protection (2026-11-11)
+
+The shared player protection now intercepts HTTPS document responses from the exact streamingnow.mov host and removes complete inline script elements matching the provider-specific ad SDK markers documented by uBlockOrigin/uAssets. Other HTML is preserved. Filtering errors block the targeted response. No generic HTTPS transport proxy is installed.
+
+Validation: 26 unit tests pass, including response/header handling and failure behavior. The Electron ad-protection fixture passes; production build succeeds; npm audit --omit=dev reports zero vulnerabilities. The fixture uses Electron protocol responses and does not establish that native response interception blocks a live inline SDK. Live MultiEmbed testing of NCIS S1E1 removed two identified inline ad scripts, but provider verification stalled at Checking your browser before video playback. Ad-free NCIS playback and all-provider live ad coverage remain unverified. No new binary release is included with this source update.
