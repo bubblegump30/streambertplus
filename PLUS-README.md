@@ -1,6 +1,11 @@
 # Streambert Plus 2.8.0 - Clean Layout
 
 
+## 2.8.4 - Discover startup tab
+
+Settings > Start Page now includes For you, Movies and TV shows buttons. Selecting one saves automatically and sets the launch page to Discover. The next app launch opens that tab. The preference is included in backups. Existing Library and Downloads start-page choices remain available.
+
+
 ## 2.8.3 - Overlay protection and player buttons
 
 - Pop out, External player, Download, Blocked and Mark season watched now have purple backgrounds and white text, including readable disabled states.

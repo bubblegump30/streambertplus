@@ -110,7 +110,20 @@ app.on('browser-window-created', (_event, win) => {
       await run('Array.from(document.querySelectorAll(".clean-sidebar-footer button")).find(b=>b.textContent.includes("Settings")).click()');
       await waitFor(win, 'document.body.innerText.includes("APPEARANCE")');
       await snap('Settings-Narrow.png');
-      fs.writeFileSync(path.join(artifacts,'result.json'),JSON.stringify({mode:'local fixtures; all HTTPS intercepted; no live playback',passed:['Collection text filtering and watched-card action','Discover movie/TV filters','TV episode list and player','TV source switching','Movie player and ten servers','Save updates sidebar watchlist','All six accents and five preset themes load','Narrow layout has no document overflow','Settings remain accessible'],themes,bounds},null,2));
+
+      for (const [id,label] of [['movie','Movies'],['tv','TV shows'],['all','For you']]) {
+        await run(`document.querySelector('.startup-discover-tabs button[aria-pressed]')?.scrollIntoView({block:'center'})`);
+        await run(`Array.from(document.querySelectorAll('.startup-discover-tabs button')).find(b=>b.textContent===${JSON.stringify(label)}).click()`);
+        assert.equal(await run('JSON.parse(localStorage.getItem("streambert_startPage"))'),'home');
+        if(id==='movie') await snap('Startup-Tab-Settings.png');
+        await reload();
+        assert.equal(await run('document.querySelector(".discover-tabs button[aria-pressed=true]").textContent'),label);
+        if(id!=='all') {
+          await run('Array.from(document.querySelectorAll(".clean-sidebar-footer button")).find(b=>b.textContent.includes("Settings")).click()');
+          await waitFor(win,'!!document.querySelector(".startup-discover-tabs")');
+        }
+      }
+      fs.writeFileSync(path.join(artifacts,'result.json'),JSON.stringify({mode:'local fixtures; all HTTPS intercepted; no live playback',passed:['Collection text filtering and watched-card action','Discover movie/TV filters','TV episode list and player','TV source switching','Movie player and ten servers','Save updates sidebar watchlist','All six accents and five preset themes load','Narrow layout has no document overflow','Settings remain accessible','Settings startup tabs save automatically and open the selected Discover view after reload'],themes,bounds},null,2));
       console.log('LAYOUT UI ACCEPTANCE PASS');app.exit(0);
     } catch(error) { console.error(error); console.error(await run('document.body.innerText')); await snap('Failure.png');app.exit(1); }
   });

@@ -4,14 +4,14 @@ import { PlayIcon, StarIcon, SearchIcon } from "../components/Icons";
 import { imgUrl, tmdbFetch } from "../utils/api";
 import { useRatings, getRatingForItem } from "../utils/useRatings";
 import { isRestricted } from "../utils/ageRating";
-import { loadHomeLayout, loadHomeViewMode } from "../utils/homeLayout";
+import { loadHomeLayout, loadHomeViewMode, loadDiscoverStartTab } from "../utils/homeLayout";
 
 const typed = (items, type) => (items || []).map((item) => ({ ...item, media_type: type }));
 const unique = (items) => [...new Map(items.map((item) => [`${item.media_type}_${item.id}`, item])).values()];
 
 export default function HomePage({ trending = [], trendingTV = [], loading, onSelect, progress = {}, inProgress = [],
   offline, onRetry, watched, onMarkWatched, onMarkUnwatched, history = [], apiKey }) {
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState(loadDiscoverStartTab);
   const [query, setQuery] = useState("");
   const [extras, setExtras] = useState({ recommended: [], topRated: [] });
   const [layout] = useState(loadHomeLayout);
@@ -89,3 +89,4 @@ export default function HomePage({ trending = [], trendingTV = [], loading, onSe
     </main>
   );
 }
+

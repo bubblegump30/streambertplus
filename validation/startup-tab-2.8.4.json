@@ -1,0 +1,10 @@
+{
+  "mode": "Packaged Electron app with isolated profile and intercepted metadata; startup initialization checked by full page reload",
+  "passed": [
+    "Movies selected through Settings opens Movies on reload",
+    "TV shows selected through Settings opens TV shows on reload",
+    "For you selected through Settings opens For you on reload",
+    "Selecting a startup tab sets launch page to Discover",
+    "20 unit tests and frontend build passed"
+  ]
+}

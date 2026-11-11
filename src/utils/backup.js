@@ -17,6 +17,7 @@ export const BACKUP_KEYS = [
   "homeRowVisible",
   "homeViewMode",
   "startPage",
+  "discoverStartTab",
   // Player preferences
   "playerSource",
   "playbackFavorites",
@@ -90,3 +91,4 @@ export function restoreBackupData(data) {
     }
   }
 }
+

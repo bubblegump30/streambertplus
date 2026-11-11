@@ -26,6 +26,9 @@ import {
 } from "../utils/updates";
 import {
   HOME_ROWS,
+  DISCOVER_START_TABS,
+  loadDiscoverStartTab,
+  saveDiscoverStartTab,
   loadHomeLayout,
   loadHomeViewMode,
   saveHomeViewMode,
@@ -1780,56 +1783,36 @@ function LibraryPrivacySection() {
 }
 
 function StartPageSection() {
-  const [startPage, setStartPage] = useState(
-    () => storage.get(STORAGE_KEYS.START_PAGE) || "home",
-  );
+  const [startPage, setStartPage] = useState(() => storage.get(STORAGE_KEYS.START_PAGE) || "home");
+  const [discoverTab, setDiscoverTab] = useState(loadDiscoverStartTab);
   const [saved, setSaved] = useState(false);
-
-  const handleSave = () => {
+  const chooseTab = (id) => {
+    setDiscoverTab(saveDiscoverStartTab(id));
+    setStartPage("home");
+    setSaved(true);
+  };
+  const savePage = () => {
     storage.set(STORAGE_KEYS.START_PAGE, startPage);
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
   };
-
-  return (
-    <div style={{ marginBottom: 40 }}>
-      <div className="settings-section-title">Start Page</div>
-      <div
-        style={{
-          fontSize: 13,
-          color: "var(--text3)",
-          marginBottom: 16,
-          lineHeight: 1.6,
-        }}
-      >
-        Choose which page opens when you launch Streambert.
-      </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          flexWrap: "wrap",
-        }}
-      >
-        <SettingsSelect
-          value={startPage}
-          onChange={(v) => setStartPage(v)}
-          options={[
-            { value: "home", label: "🏠  Home" },
-            { value: "history", label: "🕐  Library / History" },
-            { value: "downloads", label: "⬇  Downloads" },
-          ]}
-        />
-        <button className="btn btn-primary" onClick={handleSave}>
-          Save
-        </button>
-        {saved && (
-          <span style={{ fontSize: 13, color: "#48c774" }}>✓ Saved</span>
-        )}
-      </div>
+  return <div className="startup-settings" style={{ marginBottom: 40 }}>
+    <div className="settings-section-title">Start Page</div>
+    <p className="startup-settings-note">Choose which page opens when you launch Streambert.</p>
+    <div className="startup-page-controls">
+      <SettingsSelect value={startPage} onChange={(value) => { setStartPage(value); setSaved(false); }} options={[
+        { value: "home", label: "Discover" },
+        { value: "history", label: "Library / History" },
+        { value: "downloads", label: "Downloads" },
+      ]} />
+      <button className="btn btn-primary" onClick={savePage}>Save</button>
     </div>
-  );
+    <h3 className="startup-tab-heading">Discover startup tab</h3>
+    <p className="startup-settings-note">Select your launch tab. This saves automatically and sets your start page to Discover.</p>
+    <div className="startup-discover-tabs" role="group" aria-label="Discover startup tab">
+      {DISCOVER_START_TABS.map(tab => <button key={tab.id} aria-pressed={discoverTab === tab.id} onClick={() => chooseTab(tab.id)}>{tab.label}</button>)}
+    </div>
+    {saved && <p className="startup-settings-note" role="status">Saved. {startPage === "home" ? `Discover will open on ${DISCOVER_START_TABS.find(tab => tab.id === discoverTab)?.label}.` : "Your selected start page will open next time."}</p>}
+  </div>;
 }
 
 // ── TMDB Metadata Language ────────────────────────────────────────────────────
@@ -4333,3 +4316,4 @@ export default function SettingsPage({
     </>
   );
 }
+

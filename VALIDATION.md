@@ -43,3 +43,8 @@ The native fixture now checks ad markup inserted after startup and restoration a
 The shared-session fixture loads every configured source origin with local intercepted HTML and verifies ad-request cancellation and popup denial for each. This establishes protection coverage, not that every real ad on every changing provider is blocked.
 The layout and playback fixtures verify purple backgrounds and white wording on the requested player and season actions.
 
+
+## 2.8.4 startup preference
+
+The Electron UI fixture selects Movies, TV shows and For you through Settings, verifies the start page is Discover, reloads the app and checks the corresponding active Discover tab. The preference is included in the normal backup key list.
+

@@ -52,3 +52,21 @@ export function saveHomeViewMode(mode) {
 export function loadStartPage() {
   return storage.get("startPage") || "home";
 }
+
+
+export const DISCOVER_START_TABS = [
+  { id: "all", label: "For you" },
+  { id: "movie", label: "Movies" },
+  { id: "tv", label: "TV shows" },
+];
+export function loadDiscoverStartTab() {
+  const value = storage.get("discoverStartTab");
+  return DISCOVER_START_TABS.some(tab => tab.id === value) ? value : "all";
+}
+export function saveDiscoverStartTab(value) {
+  const tab = DISCOVER_START_TABS.some(tab => tab.id === value) ? value : "all";
+  storage.set("discoverStartTab", tab);
+  storage.set("startPage", "home");
+  return tab;
+}
+
