@@ -4,13 +4,21 @@
 
 ## Download the latest release
 
-**Current release: [Streambert Plus 2.8.6](https://github.com/bubblegump30/streambertplus/releases/tag/v2.8.6).** This is a regular release, not a pre-release.
+**Current release: [Streambert Plus 2.8.7](https://github.com/bubblegump30/streambertplus/releases/tag/v2.8.7).** This is a regular release, not a pre-release.
 
-- [Download Windows x64 ZIP](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.6/Streambert-Plus-2.8.6-Windows-x64.zip)
-- [Download matching source code](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.6/Streambert-Plus-2.8.6-Source.zip)
-- [SHA-256 checksums](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.6/SHA256.json)
+- [Download Windows x64 ZIP](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.7/Streambert-Plus-2.8.7-Windows-x64.zip)
+- [Download matching source code](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.7/Streambert-Plus-2.8.7-Source.zip)
+- [SHA-256 checksums](https://github.com/bubblegump30/streambertplus/releases/download/v2.8.7/SHA256.json)
 
 Close Streambert Plus, extract the **entire Windows ZIP** into a folder, and launch **Streambert Plus.exe**. Keep its supporting files beside the executable. Plus versions share the same application profile; keep your existing profile when updating.
+
+## 2.8.7 - AutoEmbed rotating-script protection
+
+- Restrict third-party executable scripts on the exact AutoEmbed wrapper and observed player hosts, blocking rotating ad-loader domains absent from the bundled lists.
+- Preserve first-party player scripts, required player libraries, media/subtitle requests and genuine verification scripts.
+- Keep shared network, popup, navigation and cosmetic protections for the other sources.
+
+Live NCIS S24E4 testing on AutoEmbed loaded a 42:28 video and, after seeking to 34:59, observed it advance to about 35:11 with no overlay visible. This is a brief seek-based sample, not a complete uninterrupted episode or a guarantee that all providers are ad-free. Genuine access-verification challenges are not bypassed. Provider changes can require further updates.
 
 ## 2.8.6 - MultiEmbed inline ad protection
 

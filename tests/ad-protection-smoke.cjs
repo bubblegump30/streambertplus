@@ -63,6 +63,15 @@ app.whenReady().then(async()=>{
     assert.ok(new URL(win.webContents.getURL()).origin === 'https://streamingnow.mov');
     await run('location.href="https://advert.example.org/takeover"');await delay(200);
     assert.ok(new URL(win.webContents.getURL()).origin === 'https://streamingnow.mov');
+    for(const host of ['autoembed.me','player.autoembed.me','nextgencloudfabric.com']) {
+      await win.loadURL('https://'+host+'/policy-fixture');
+      const target='https://rotating-ad-fixture.example/'+host+'.js';
+      await run(`(()=>{const s=document.createElement('script');s.src='${target}';document.head.append(s)})()`);
+      await delay(200);
+      assert.ok(blocked.includes(target),'Unknown third-party script must be blocked in '+host);
+      assert.ok(!visited.includes(target),'Ad script must never reach the response handler');
+      assert.equal(await run('window.mediaOK && window.subsOK'),true);
+    }
     const sourceOrigins=['https://player.videasy.to','https://vsembed.su','https://www.vidking.net','https://allmanga.to','https://vidsrc.mov','https://vidlink.pro','https://multiembed.mov','https://embedwave.cc','https://autoembed.me','https://movietvapi.stream'];
     for(const origin of sourceOrigins){
       const adCount=blocked.filter(isAdFixture).length;
@@ -73,9 +82,8 @@ app.whenReady().then(async()=>{
       assert.ok(blocked.filter(isAdFixture).length>adCount);
     }
 
-    fs.writeFileSync(path.join(artifacts,'result.json'),JSON.stringify({mode:'Isolated Electron HTTPS fixtures, no live external stream',passed:['Ad script cancelled before response','Main and nested frame ad markup hidden','Late ad overlays hidden after startup','Removed ad stylesheet restored','Shared-session protection applied to every configured source origin','Video element preserved','Media playlist and subtitle requests preserved','Popup denied','Cross-origin takeover denied','MultiEmbed HTTP redirect accepted without opening arbitrary origins']},null,2));
+    fs.writeFileSync(path.join(artifacts,'result.json'),JSON.stringify({mode:'Isolated Electron HTTPS fixtures, no live external stream',passed:['AutoEmbed rotating third-party scripts blocked in all three verified frames','Ad script cancelled before response','Main and nested frame ad markup hidden','Late ad overlays hidden after startup','Removed ad stylesheet restored','Shared-session protection applied to every configured source origin','Video element preserved','Media playlist and subtitle requests preserved','Popup denied','Cross-origin takeover denied','MultiEmbed HTTP redirect accepted without opening arbitrary origins']},null,2));
     console.log('AD PROTECTION ACCEPTANCE PASS');app.exit(0);
   }catch(error){console.error(error);app.exit(1);}
 });
 setTimeout(()=>{console.error('Ad protection acceptance timed out');app.exit(1)},30000).unref();
-

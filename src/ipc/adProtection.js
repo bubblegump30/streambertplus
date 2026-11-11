@@ -1,4 +1,5 @@
 const fs = require('node:fs');
+const { blocksProviderScript } = require('./providerRequestPolicy');
 const path = require('node:path');
 const { FiltersEngine, Request } = require('@ghostery/adblocker');
 const { protectPlayerHtml, protectedHtmlHost } = require('./playerHtmlProtection');
@@ -8,6 +9,7 @@ function getEngine() {
   return engine;
 }
 function blocksRequest(details) {
+  if (blocksProviderScript(details)) return true;
   // Keep Electron's resource type and initiator: filter exceptions and first-party rules matter.
   return getEngine().match(Request.fromRawDetails({ url: details.url, sourceUrl: details.referrer || '', type: details.resourceType || 'other' })).match;
 }

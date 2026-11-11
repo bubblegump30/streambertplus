@@ -60,3 +60,14 @@ The Electron UI fixture selects Movies, TV shows and For you through Settings, v
 The shared player protection now intercepts HTTPS document responses from the exact streamingnow.mov host and removes complete inline script elements matching the provider-specific ad SDK markers documented by uBlockOrigin/uAssets. Other HTML is preserved. Filtering errors block the targeted response. No generic HTTPS transport proxy is installed.
 
 Validation: 26 unit tests pass, including response/header handling and failure behavior. The Electron ad-protection fixture passes; production build succeeds; npm audit --omit=dev reports zero vulnerabilities. The fixture uses Electron protocol responses and does not establish that native response interception blocks a live inline SDK. Live MultiEmbed testing of NCIS S1E1 removed two identified inline ad scripts, but provider verification stalled at Checking your browser before video playback. Ad-free NCIS playback and all-provider live ad coverage remain unverified. No new binary release is included with this source update.
+
+
+## 2.8.7 - AutoEmbed rotating-script protection
+
+- Restrict third-party executable scripts on the exact AutoEmbed wrapper and observed player hosts, blocking rotating ad-loader domains absent from the bundled lists.
+- Preserve first-party player scripts, required player libraries, media/subtitle requests and genuine verification scripts.
+- Keep shared network, popup, navigation and cosmetic protections for the other sources.
+
+Live NCIS S24E4 testing on AutoEmbed loaded a 42:28 video and, after seeking to 34:59, observed it advance to about 35:11 with no overlay visible. This is a brief seek-based sample, not a complete uninterrupted episode or a guarantee that all providers are ad-free. Genuine access-verification challenges are not bypassed. Provider changes can require further updates.
+
+29 unit tests pass. The native Electron fixture verifies rotating third-party script requests are cancelled on all three observed AutoEmbed frame hosts, without fetching their responses; local media and subtitle requests remain available.
